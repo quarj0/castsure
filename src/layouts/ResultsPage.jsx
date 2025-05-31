@@ -50,7 +50,6 @@ const ResultsPage = () => {
       setLoading(true);
       // First try to get the results
       const resultsResponse = await axiosInstance.get(`/vote/results/${pollId}/`);
-      console.log('Raw results response:', resultsResponse.data);
 
       // Process results data
       const resultsData = resultsResponse.data;
@@ -75,13 +74,12 @@ const ResultsPage = () => {
         newPollDetails = pollResponse.data;
 
         // Check if poll is still active
-        const now = new Date();
+        const now = new Date(new Date().toISOString());
         const endTime = new Date(pollResponse.data.end_time);
         const startTime = new Date(pollResponse.data.start_time);
         setIsPollActive(pollResponse.data.is_active && now >= startTime && now <= endTime);
       } catch (pollError) {
         console.error('Error fetching poll details:', pollError);
-        console.log('Poll error response:', pollError.response?.data);
         if (pollError.response?.data?.detail === "Poll is not active") {
           setIsPollActive(false);
         }
