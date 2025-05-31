@@ -78,7 +78,7 @@ const ResultsPage = () => {
         const now = new Date();
         const endTime = new Date(pollResponse.data.end_time);
         const startTime = new Date(pollResponse.data.start_time);
-        setIsPollActive(now >= startTime && now <= endTime);
+        setIsPollActive(pollResponse.data.is_active && now >= startTime && now <= endTime);
       } catch (pollError) {
         console.error('Error fetching poll details:', pollError);
         console.log('Poll error response:', pollError.response?.data);
