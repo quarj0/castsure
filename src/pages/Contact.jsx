@@ -19,7 +19,7 @@ const Contact = () => {
     setSuccess("");
     setError("");
     try {
-      await axiosInstance.post("/api/contact/", form);
+      await axiosInstance.post("/auth/contact/", form);
       setSuccess("Your message has been sent successfully.");
       setForm({ name: "", email: "", message: "" });
     } catch (err) {
