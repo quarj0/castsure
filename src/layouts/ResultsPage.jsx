@@ -30,7 +30,7 @@ const ResultsPage = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState("bar");
+  const [activeTab, setActiveTab] = useState("table");
   const [pollDetails, setPollDetails] = useState(null);
   const [pollData, setPollData] = useState(null);
   const [isActive, setIsActive] = useState(false);
@@ -62,7 +62,6 @@ const ResultsPage = () => {
       // Process results data
       const resultsData = resultsResponse.data;
       const processedResults = processResults(resultsData);
-      console.log('Processed results:', processedResults);
       setResults(resultsData); // Store the raw data instead of processed data
 
       let newPollDetails = null;
@@ -78,7 +77,6 @@ const ResultsPage = () => {
       try {
         // Then try to get poll details
         const pollResponse = await axiosInstance.get(`/polls/${pollId}/`);
-        console.log('Poll response:', pollResponse.data);
         newPollDetails = pollResponse.data;
 
         // Check if poll is still active
@@ -453,8 +451,6 @@ const ResultsPage = () => {
       wsRef.current.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log('Raw WebSocket message:', event.data);
-          console.log('Parsed WebSocket data:', data);
           switch (data.type) {
             case 'poll_results':
               if (data.poll_results) {
@@ -465,12 +461,12 @@ const ResultsPage = () => {
                   0
                 ) || 0;
                 setTotalVotes(total);
-                console.log('Updated poll data:', data.poll_results);
-                console.log('Total votes:', total);
                 // If poll is now inactive, disconnect WebSocket
                 if (!data.poll_results.active) {
                   disconnectWebSocket();
                 }
+                // Fetch latest results from HTTP endpoint for live update
+                fetchResults();
               }
               break;
             case 'pong':
@@ -600,6 +596,14 @@ const ResultsPage = () => {
     }, 30000); // Ping every 30 seconds
     return () => clearInterval(pingInterval);
   }, []);
+
+  // Add periodic polling every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchResults();
+    }, 300000); // 5 minutes
+    return () => clearInterval(interval);
+  }, [fetchResults]);
 
   const handleRetryConnection = () => {
     reconnectAttemptsRef.current = 0;
@@ -747,6 +751,19 @@ const ResultsPage = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => setActiveTab("table")}
+                className={`px-4 py-2 rounded-lg flex items-center ${
+                  activeTab === "table"
+                    ? "bg-primary-600 text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                <FaTable className="mr-2" />
+                Table View
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab("bar")}
                 className={`px-4 py-2 rounded-lg flex items-center ${
                   activeTab === "bar"
@@ -755,7 +772,7 @@ const ResultsPage = () => {
                 }`}
               >
                 <FaChartBar className="mr-2" />
-                Bar Chart
+                Bar View
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -768,20 +785,7 @@ const ResultsPage = () => {
                 }`}
               >
                 <FaChartPie className="mr-2" />
-                Pie Chart
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveTab("table")}
-                className={`px-4 py-2 rounded-lg flex items-center ${
-                  activeTab === "table"
-                    ? "bg-primary-600 text-white"
-                    : "bg-white text-gray-600 hover:bg-gray-50"
-                }`}
-              >
-                <FaTable className="mr-2" />
-                Table View
+                Pie View
               </motion.button>
             </div>
 
