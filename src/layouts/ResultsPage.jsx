@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axiosInstance from "../apis/api";
 import {
@@ -32,8 +32,16 @@ const ResultsPage = () => {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("bar");
   const [pollDetails, setPollDetails] = useState(null);
-  const [wsStatus, setWsStatus] = useState('connecting');
-  const [isPollActive, setIsPollActive] = useState(false);
+  const [pollData, setPollData] = useState(null);
+  const [isActive, setIsActive] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState(null);
+  const [totalVotes, setTotalVotes] = useState(0);
+  const wsRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectAttempts = 5;
+  const httpIntervalRef = useRef(null);
 
   // Helper function to process image URLs
   const getImageUrl = (imageData) => {
@@ -79,11 +87,11 @@ const ResultsPage = () => {
         const startTime = new Date(pollData.start_time);
         const endTime = new Date(pollData.end_time);
         const isActive = pollData.active;
-        setIsPollActive(isActive && now >= startTime && now <= endTime);
+        setIsActive(isActive && now >= startTime && now <= endTime);
       } catch (pollError) {
         console.error('Error fetching poll details:', pollError);
         if (pollError.response?.data?.detail === "Poll is not active") {
-          setIsPollActive(false);
+          setIsActive(false);
         }
       }
 
@@ -109,74 +117,6 @@ const ResultsPage = () => {
   useEffect(() => {
     fetchResults();
   }, [fetchResults]);
-
-  // WebSocket connection for active polls only
-  useEffect(() => {
-    if (!isPollActive) {
-      console.log('Poll is not active, skipping WebSocket connection');
-      return;
-    }
-
-    let ws = null;
-    let reconnectTimeout = null;
-
-    const connectWebSocket = () => {
-      if (wsStatus === 'connected') return;
-      setWsStatus('connecting');
-      ws = new WebSocket(`ws://localhost:8000/ws/poll/${pollId}/`);
-
-      ws.onopen = () => {
-        console.log('WebSocket connected');
-        setWsStatus('connected');
-        if (reconnectTimeout) {
-          clearTimeout(reconnectTimeout);
-          reconnectTimeout = null;
-        }
-      };
-
-      ws.onmessage = (event) => {
-        console.log("Raw WebSocket message:", event.data);
-        try {
-          const data = JSON.parse(event.data);
-          console.log("Parsed WebSocket data:", data);
-          if (data.type === 'error') {
-            setError(data.message || "WebSocket error occurred");
-            setWsStatus('error');
-            return;
-          }
-          const resultsData = data.poll_results?.votes || data.poll_results || [];
-          setResults(processResults(resultsData));
-        } catch (e) {
-          console.error("Error processing WebSocket message:", e);
-          setError("Failed to process live results");
-          setWsStatus('error');
-        }
-      };
-
-      ws.onclose = () => {
-        console.log('WebSocket disconnected');
-        setWsStatus('disconnected');
-        // Only try to reconnect if the poll is still active
-        if (isPollActive) {
-          console.log('Attempting to reconnect...');
-          reconnectTimeout = setTimeout(connectWebSocket, 5000);
-        }
-      };
-
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        setWsStatus('error');
-        ws.close();
-      };
-    };
-
-    const timer = setTimeout(connectWebSocket, 500);
-    return () => {
-      clearTimeout(timer);
-      if (ws) ws.close();
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
-    };
-  }, [pollId, wsStatus, isPollActive]);
 
   const processResults = (data) => {
     if (!data) return { results: [], categories: {}, categoryList: [], totalVotes: 0 };
@@ -492,6 +432,181 @@ const ResultsPage = () => {
     }
   };
 
+  // --- WebSocket logic ---
+  const connectWebSocket = useCallback(() => {
+    if (!isActive) return;
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      console.log('WebSocket already connected');
+      return;
+    }
+    try {
+      const wsUrl = `ws://localhost:8000/ws/poll/${pollId}/`;
+      console.log('Connecting to WebSocket:', wsUrl);
+      wsRef.current = new WebSocket(wsUrl);
+      wsRef.current.onopen = () => {
+        console.log('WebSocket connected');
+        setIsConnected(true);
+        setConnectionError(null);
+        reconnectAttemptsRef.current = 0;
+        wsRef.current.send(JSON.stringify({ type: 'ping' }));
+      };
+      wsRef.current.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('Raw WebSocket message:', event.data);
+          console.log('Parsed WebSocket data:', data);
+          switch (data.type) {
+            case 'poll_results':
+              if (data.poll_results) {
+                setPollData(data.poll_results);
+                setIsActive(!!data.poll_results.active);
+                const total = data.poll_results.votes?.reduce(
+                  (sum, vote) => sum + (vote.total_votes || 0), 
+                  0
+                ) || 0;
+                setTotalVotes(total);
+                console.log('Updated poll data:', data.poll_results);
+                console.log('Total votes:', total);
+                // If poll is now inactive, disconnect WebSocket
+                if (!data.poll_results.active) {
+                  disconnectWebSocket();
+                }
+              }
+              break;
+            case 'pong':
+              console.log('Received pong from server');
+              break;
+            case 'error':
+              console.error('WebSocket error message:', data.message);
+              setConnectionError(data.message);
+              break;
+            default:
+              console.log('Unknown message type:', data.type);
+          }
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      };
+      wsRef.current.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setConnectionError('Connection error occurred');
+        setIsConnected(false);
+      };
+      wsRef.current.onclose = (event) => {
+        console.log(`WebSocket disconnected: ${event.code} - ${event.reason}`);
+        setIsConnected(false);
+        if (event.code !== 1000 && reconnectAttemptsRef.current < maxReconnectAttempts && isActive) {
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
+          console.log(`Attempting to reconnect in ${delay}ms... (attempt ${reconnectAttemptsRef.current + 1})`);
+          reconnectTimeoutRef.current = setTimeout(() => {
+            reconnectAttemptsRef.current++;
+            connectWebSocket();
+          }, delay);
+        } else if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
+          setConnectionError('Maximum reconnection attempts reached');
+        }
+      };
+    } catch (error) {
+      console.error('Error creating WebSocket connection:', error);
+      setConnectionError('Failed to create WebSocket connection');
+    }
+  }, [pollId, isActive]);
+
+  const disconnectWebSocket = useCallback(() => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    if (wsRef.current) {
+      wsRef.current.close(1000, 'Component unmounting or poll ended');
+      wsRef.current = null;
+    }
+    setIsConnected(false);
+  }, []);
+
+  const requestUpdate = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ 
+        type: 'request_update',
+        poll_id: pollId 
+      }));
+    }
+  }, [pollId]);
+
+  // --- Initial HTTP fetch to get pollData and isActive ---
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const response = await fetch(`http://localhost:8000/polls/${pollId}/`);
+        if (response.ok) {
+          const data = await response.json();
+          setPollData(data);
+          setIsActive(!!data.active);
+          const total = data.votes?.reduce((sum, vote) => sum + (vote.total_votes || 0), 0) || 0;
+          setTotalVotes(total);
+        }
+      } catch (error) {
+        console.error('Error fetching initial poll data:', error);
+      }
+    };
+    if (pollId) {
+      fetchInitialData();
+    }
+  }, [pollId]);
+
+  // --- WebSocket connection management ---
+  useEffect(() => {
+    if (isActive) {
+      connectWebSocket();
+    } else {
+      disconnectWebSocket();
+    }
+    return () => {
+      disconnectWebSocket();
+    };
+  }, [isActive, connectWebSocket, disconnectWebSocket]);
+
+  // --- HTTP polling for ended polls (optional, every 30s) ---
+  useEffect(() => {
+    if (!isActive && pollId) {
+      httpIntervalRef.current = setInterval(async () => {
+        try {
+          const response = await fetch(`http://localhost:8000/polls/${pollId}/`);
+          if (response.ok) {
+            const data = await response.json();
+            setPollData(data);
+            const total = data.votes?.reduce((sum, vote) => sum + (vote.total_votes || 0), 0) || 0;
+            setTotalVotes(total);
+          }
+        } catch (error) {
+          console.error('Error fetching poll data (ended poll):', error);
+        }
+      }, 30000); // 30s
+    }
+    return () => {
+      if (httpIntervalRef.current) {
+        clearInterval(httpIntervalRef.current);
+        httpIntervalRef.current = null;
+      }
+    };
+  }, [isActive, pollId]);
+
+  // --- Periodic ping to keep connection alive ---
+  useEffect(() => {
+    const pingInterval = setInterval(() => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'ping' }));
+      }
+    }, 30000); // Ping every 30 seconds
+    return () => clearInterval(pingInterval);
+  }, []);
+
+  const handleRetryConnection = () => {
+    reconnectAttemptsRef.current = 0;
+    setConnectionError(null);
+    connectWebSocket();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
       {/* Header */}
@@ -682,6 +797,86 @@ const ResultsPage = () => {
                 {renderChart()}
               </motion.div>
             </AnimatePresence>
+
+            {/* Connection Status */}
+            <div className="mt-6 p-3 rounded-lg flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className={`w-3 h-3 rounded-full ${isActive ? (isConnected ? 'bg-green-500' : 'bg-red-500') : 'bg-gray-400'}`}></div>
+                <span className="text-sm font-medium">
+                  {isActive ? (isConnected ? 'Live Updates Active' : 'Connection Lost') : 'Poll Ended'}
+                </span>
+              </div>
+              {connectionError && isActive && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-red-600">{connectionError}</span>
+                  <button 
+                    onClick={handleRetryConnection}
+                    className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+              {isActive && (
+                <button 
+                  onClick={requestUpdate}
+                  className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                  disabled={!isConnected}
+                >
+                  Refresh
+                </button>
+              )}
+            </div>
+
+            {/* Poll Information */}
+            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">{pollData?.title}</h1>
+              <p className="text-gray-600 mb-4">{pollData?.description}</p>
+              <div className="flex items-center justify-between text-sm text-gray-500">
+                <span>Total Votes: <strong className="text-blue-600">{totalVotes.toLocaleString()}</strong></span>
+                <span>Last Updated: {new Date(pollData?.last_updated).toLocaleTimeString()}</span>
+              </div>
+            </div>
+
+            {/* Voting Results */}
+            <div className="space-y-4">
+              {pollData?.votes?.map((vote, index) => {
+                const percentage = totalVotes > 0 ? (vote.total_votes / totalVotes * 100) : 0;
+                return (
+                  <div key={vote.contestant} className="bg-white rounded-lg shadow p-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        Contestant #{vote.contestant}
+                      </h3>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-blue-600">
+                          {vote.total_votes.toLocaleString()}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {percentage.toFixed(1)}%
+                        </div>
+                      </div>
+                    </div>
+                    {/* Progress Bar */}
+                    <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                      <div 
+                        className="bg-gradient-to-r from-blue-500 to-purple-600 h-4 rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Empty State */}
+            {(!pollData?.votes || pollData?.votes.length === 0) && (
+              <div className="text-center py-12">
+                <div className="text-gray-400 text-6xl mb-4">📊</div>
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">No Votes Yet</h3>
+                <p className="text-gray-500">Be the first to vote in this poll!</p>
+              </div>
+            )}
           </motion.div>
         )}
       </div>
