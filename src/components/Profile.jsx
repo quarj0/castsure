@@ -10,6 +10,7 @@ const Profile = ({ authTokens }) => {
   const [user, setUser] = useState(null);
   const [availableBalance, setAvailableBalance] = useState(null);
   const [totalWithdrawn, setTotalWithdrawn] = useState(null);
+  const [totalCollected, setTotalCollected] = useState(null);
   const [pollId, setPollId] = useState(null);
   const [paymentHistory, setPaymentHistory] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,8 +63,10 @@ const Profile = ({ authTokens }) => {
           Authorization: `Bearer ${authTokens.access}`,
         },
       });
+      console.log("Balance response:", response.data); // Debug log
       setAvailableBalance(response.data.available_balance);
       setTotalWithdrawn(response.data.total_withdrawn);
+      setTotalCollected(response.data.total_collected);
     } catch (error) {
       setError("Failed to load balance data.");
       console.error("Error fetching balance:", error);
@@ -71,10 +74,23 @@ const Profile = ({ authTokens }) => {
   }, [authTokens.access]);
 
   useEffect(() => {
-    fetchUser();
-    fetchBalance();
-    fetchPaymentHistory();
-  }, [authTokens, fetchBalance, fetchUser, fetchPaymentHistory]);
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        await Promise.all([
+          fetchUser(),
+          fetchBalance(),
+          fetchPaymentHistory()
+        ]);
+      } catch (error) {
+        console.error("Error loading profile data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [authTokens]);
 
   const handleProfileUpdate = () => {
     fetchUser();
@@ -161,24 +177,35 @@ const Profile = ({ authTokens }) => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => {
-                setPollId(user.poll_id);
+                setPollId(user?.poll_id);
                 setIsWithdrawModalOpen(true);
               }}
-              className="px-4 py-2 bg-primary-50 text-secondary-600 rounded-lg hover:bg-primary-100 transition-colors flex items-center"
+              disabled={!availableBalance || availableBalance <= 0}
+              className="px-4 py-2 bg-primary-50 text-secondary-600 rounded-lg hover:bg-primary-100 transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FaWallet className="mr-2" />
               Withdraw
             </motion.button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-green-50 rounded-lg p-4">
               <p className="text-sm text-green-600 mb-1">Available Balance</p>
-              <p className="text-2xl font-bold text-green-700">GHS {availableBalance || 0}</p>
+              <p className="text-2xl font-bold text-green-700">
+                GHS {availableBalance !== null ? Number(availableBalance).toFixed(2) : '0.00'}
+              </p>
             </div>
             <div className="bg-blue-50 rounded-lg p-4">
               <p className="text-sm text-blue-600 mb-1">Total Withdrawn</p>
-              <p className="text-2xl font-bold text-blue-700">GHS {totalWithdrawn || 0}</p>
+              <p className="text-2xl font-bold text-blue-700">
+                GHS {totalWithdrawn !== null ? Number(totalWithdrawn).toFixed(2) : '0.00'}
+              </p>
+            </div>
+            <div className="bg-purple-50 rounded-lg p-4">
+              <p className="text-sm text-purple-600 mb-1">Total Collected</p>
+              <p className="text-2xl font-bold text-purple-700">
+                GHS {totalCollected !== null ? Number(totalCollected).toFixed(2) : '0.00'}
+              </p>
             </div>
           </div>
         </motion.div>
@@ -212,11 +239,17 @@ const Profile = ({ authTokens }) => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {paymentHistory.results.map((payment, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{payment.transaction_type}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {payment.transaction_type === 'poll_activation' ? 'Poll Activation' : 'Vote Payment'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{payment.poll_id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">GHS {payment.amount}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        GHS {Number(payment.amount).toFixed(2)}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${payment.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          payment.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
                           {payment.success ? 'Success' : 'Failed'}
                         </span>
                       </td>
@@ -227,23 +260,30 @@ const Profile = ({ authTokens }) => {
                   ))}
                 </tbody>
               </table>
-              <div className="flex justify-between items-center mt-4">
-                <button
-                  onClick={() => fetchPaymentHistory(paymentHistory.previous)}
-                  disabled={!paymentHistory.previous}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-200 transition-colors flex items-center"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => fetchPaymentHistory(paymentHistory.next)}
-                  disabled={!paymentHistory.next}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-200 transition-colors flex items-center"
-                >
-                  Next
-                  <FaArrowRight className="ml-2" />
-                </button>
-              </div>
+              
+              {/* Pagination */}
+              {(paymentHistory.previous || paymentHistory.next) && (
+                <div className="flex justify-between items-center mt-4">
+                  <button
+                    onClick={() => fetchPaymentHistory(paymentHistory.previous)}
+                    disabled={!paymentHistory.previous}
+                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-200 transition-colors flex items-center"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm text-gray-500">
+                    Page {paymentHistory.current_page || 1}
+                  </span>
+                  <button
+                    onClick={() => fetchPaymentHistory(paymentHistory.next)}
+                    disabled={!paymentHistory.next}
+                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-200 transition-colors flex items-center"
+                  >
+                    Next
+                    <FaArrowRight className="ml-2" />
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">

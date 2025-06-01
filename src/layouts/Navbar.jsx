@@ -15,7 +15,7 @@ import axiosInstance from "../apis/api";
 import logo from "../assets/castsure-logo.jpeg";
 
 export default function Navbar({ authTokens, logout }) {
-  const [balance, setBalance] = useState({ available: 0 });
+  const [balance, setBalance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const location = useLocation();
@@ -37,26 +37,29 @@ export default function Navbar({ authTokens, logout }) {
     if (authTokens) {
       setLoading(true);
       setError(false);
+      
       const fetchBalance = async () => {
         try {
           const response = await axiosInstance.get("/payment/account/balance/", {
             headers: { Authorization: `Bearer ${authTokens.access}` },
           });
+          
+          
+          
           if (response.data && typeof response.data.available_balance === "number") {
-            setBalance(response.data.available_balance.toFixed(2));
+            setBalance(response.data.available_balance);
           } else {
-            console.error("Invalid balance data:", response.data);
-            setBalance("0.00");
+            setBalance(0);
           }
         } catch (error) {
           console.error("Error fetching balance:", error);
-          setBalance("0.00");
-          // Optionally show error message to user
-          // setError('Failed to fetch balance');
+          setBalance(0);
+          setError(true);
         } finally {
           setLoading(false);
         }
       };
+      
       fetchBalance();
     }
   }, [authTokens]);
@@ -137,12 +140,16 @@ export default function Navbar({ authTokens, logout }) {
                 <div className="flex items-center space-x-4">
                   <div className="hidden sm:block">
                     {loading ? (
-                      <div className="text-sm text-gray-600 animate-pulse font-lato">Loading balance...</div>
+                      <div className="text-sm text-gray-600 animate-pulse font-lato">
+                        Loading balance...
+                      </div>
                     ) : error ? (
-                      <div className="text-sm text-red-500 animate-pulse font-lato">Error loading balance</div>
+                      <div className="text-sm text-red-500 font-lato">
+                        Error loading balance
+                      </div>
                     ) : (
                       <span className="text-sm font-medium text-gray-700 font-montserrat">
-                        Balance: GHS {balance.available}
+                        Balance: GHS {balance !== null ? Number(balance).toFixed(2) : '0.00'}
                       </span>
                     )}
                   </div>
@@ -225,12 +232,16 @@ export default function Navbar({ authTokens, logout }) {
                 <div className="space-y-1 px-2 pb-3 pt-2 bg-white shadow-lg rounded-b-lg">
                   <div className="py-2 px-3 border-b border-gray-200">
                     {loading ? (
-                      <div className="text-sm text-gray-600 animate-pulse">Loading balance...</div>
+                      <div className="text-sm text-gray-600 animate-pulse">
+                        Loading balance...
+                      </div>
                     ) : error ? (
-                      <div className="text-sm text-red-500 animate-pulse">Error loading balance</div>
+                      <div className="text-sm text-red-500">
+                        Error loading balance
+                      </div>
                     ) : (
                       <span className="text-sm font-medium text-gray-700">
-                        Balance: GHS {balance.available}
+                        Balance: GHS {balance !== null ? Number(balance).toFixed(2) : '0.00'}
                       </span>
                     )}
                   </div>
