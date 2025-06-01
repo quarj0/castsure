@@ -74,10 +74,12 @@ const ResultsPage = () => {
         newPollDetails = pollResponse.data;
 
         // Check if poll is still active
+        const pollData = pollResponse.data.poll;
         const now = new Date(new Date().toISOString());
-        const endTime = new Date(pollResponse.data.end_time);
-        const startTime = new Date(pollResponse.data.start_time);
-        setIsPollActive(pollResponse.data.is_active && now >= startTime && now <= endTime);
+        const startTime = new Date(pollData.start_time);
+        const endTime = new Date(pollData.end_time);
+        const isActive = pollData.active;
+        setIsPollActive(isActive && now >= startTime && now <= endTime);
       } catch (pollError) {
         console.error('Error fetching poll details:', pollError);
         if (pollError.response?.data?.detail === "Poll is not active") {
