@@ -43,6 +43,31 @@ const CreatePoll = () => {
   const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
   const VOTER_CODES_URL = import.meta.env.VITE_API_URL;
 
+  // FIXED: Move useEffect to top level - always called, never conditional
+  useEffect(() => {
+    const fetchPaystackDetails = async () => {
+      if (!paystackDetails && responseData?.payment_link && formData.poll_type === "creator-pay") {
+        try {
+          setPaystackLoading(true);
+          const pollId = responseData.poll_id;
+          const res = await axiosInstance.post(`/vote/creator-pay/${pollId}/`, { code: "ACTIVATION" });
+          setPaystackDetails({
+            amount: res.data.amount,
+            email: res.data.email,
+            reference: res.data.reference,
+          });
+        } catch (err) {
+          console.error(err);
+          setPaystackError("Failed to get payment details. Please refresh the page.");
+        } finally {
+          setPaystackLoading(false);
+        }
+      }
+    };
+
+    fetchPaystackDetails();
+  }, [responseData, paystackDetails, formData.poll_type]);
+
   const handleInputChange = (e) => {
     const { name, value, type, files } = e.target;
     if (type === "file") {
@@ -134,9 +159,7 @@ const CreatePoll = () => {
 
     setLoading(true);
     try {
-      const res = await axiosInstance.post("polls/create/", submissionData, {
-      
-      });
+      const res = await axiosInstance.post("polls/create/", submissionData);
       setResponseData(res.data);
     } catch (err) {
       console.error("API Error:", err.response?.data);
@@ -158,6 +181,22 @@ const CreatePoll = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePaystackSuccess = async () => {
+    setPaystackLoading(false);
+    setPaystackSuccess("Verifying payment...");
+    try {
+      const verifyRes = await axiosInstance.get(`/payment/verify/${paystackDetails.reference}/`);
+      setPaystackSuccess(verifyRes.data.message || "Payment verified successfully.");
+    } catch (err) {
+      setPaystackError(err || "Payment verification failed. Please contact support if you were debited.");
+    }
+  };
+
+  const handlePaystackClose = () => {
+    setPaystackLoading(false);
+    setPaystackDetails(null);
   };
 
   const renderStepContent = () => {
@@ -198,47 +237,47 @@ const CreatePoll = () => {
               )}
             </div>
             <div>
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Poll Image
-  </label>
-  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
-    <div className="space-y-1 text-center">
-      <FaImage className="mx-auto h-12 w-12 text-gray-400" />
-      <div className="flex text-sm text-gray-600">
-        <label
-          htmlFor="poll-image-upload"
-          className="relative cursor-pointer rounded-md font-medium text-secondary-600 hover:text-secondary-500"
-        >
-          <span>Upload an image</span>
-          <input
-            id="poll-image-upload"
-            name="poll_image" // Changed from "image" to "poll_image"
-            type="file"
-            accept="image/jpeg,image/png" // More specific to match backend validation
-            onChange={handleInputChange}
-            className="sr-only"
-          />
-        </label>
-      </div>
-      <p className="text-xs text-gray-500">PNG, JPG up to 3MB</p>
-    </div>
-  </div>
-  {formData.poll_image && ( 
-    <div className="mt-4">
-      <img
-        src={URL.createObjectURL(formData.poll_image)}
-        alt="Preview"
-        className="h-32 w-32 object-cover rounded-lg"
-      />
-      <p className="text-sm text-gray-600 mt-1">
-        Selected: {formData.poll_image.name}
-      </p>
-    </div>
-  )}
-  {errors.poll_image && ( 
-    <p className="mt-1 text-sm text-red-600">{errors.poll_image}</p>
-  )}
-</div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Poll Image
+              </label>
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+                <div className="space-y-1 text-center">
+                  <FaImage className="mx-auto h-12 w-12 text-gray-400" />
+                  <div className="flex text-sm text-gray-600">
+                    <label
+                      htmlFor="poll-image-upload"
+                      className="relative cursor-pointer rounded-md font-medium text-secondary-600 hover:text-secondary-500"
+                    >
+                      <span>Upload an image</span>
+                      <input
+                        id="poll-image-upload"
+                        name="poll_image"
+                        type="file"
+                        accept="image/jpeg,image/png"
+                        onChange={handleInputChange}
+                        className="sr-only"
+                      />
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500">PNG, JPG up to 3MB</p>
+                </div>
+              </div>
+              {formData.poll_image && ( 
+                <div className="mt-4">
+                  <img
+                    src={URL.createObjectURL(formData.poll_image)}
+                    alt="Preview"
+                    className="h-32 w-32 object-cover rounded-lg"
+                  />
+                  <p className="text-sm text-gray-600 mt-1">
+                    Selected: {formData.poll_image.name}
+                  </p>
+                </div>
+              )}
+              {errors.poll_image && ( 
+                <p className="mt-1 text-sm text-red-600">{errors.poll_image}</p>
+              )}
+            </div>
           </div>
         );
       case 1:
@@ -420,53 +459,8 @@ const CreatePoll = () => {
   };
 
   if (responseData) {
-    // If creator-pay, fetch payment details for PaystackButton
     const isCreatorPay = responseData && responseData.payment_link && formData.poll_type === "creator-pay";
 
-    const fetchPaystackDetails = async () => {
-      if (!paystackDetails && isCreatorPay) {
-        try {
-          setPaystackLoading(true);
-          // Call backend to get amount, email, reference for PaystackButton
-          const pollId = responseData.poll_id;
-          const res = await axiosInstance.post(`/vote/creator-pay/${pollId}/`, { code: "ACTIVATION" });
-          setPaystackDetails({
-            amount: res.data.amount,
-            email: res.data.email,
-            reference: res.data.reference,
-          });
-        } catch (err) {
-          console.error(err)
-          setPaystackError("Failed to get payment details. Please refresh the page.");
-        } finally {
-          setPaystackLoading(false);
-        }
-      }
-    };
-
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useEffect(() => {
-      if (isCreatorPay && !paystackDetails) {
-        fetchPaystackDetails();
-      }
-      // eslint-disable-next-line
-    }, [isCreatorPay, paystackDetails]);
-
-    const handlePaystackSuccess = async () => {
-      setPaystackLoading(false);
-      setPaystackSuccess("Verifying payment...");
-      try {
-        const verifyRes = await axiosInstance.get(`/payment/verify/${paystackDetails.reference}/`);
-        setPaystackSuccess(verifyRes.data.message || "Payment verified successfully.");
-      } catch (err) {
-        setPaystackError(err)
-        setPaystackError("Payment verification failed. Please contact support if you were debited.");
-      }
-    };
-    const handlePaystackClose = () => {
-      setPaystackLoading(false);
-      setPaystackDetails(null);
-    };
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}

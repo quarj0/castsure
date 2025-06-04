@@ -57,7 +57,6 @@ const Breadcrumb = () => {
         { 
           path: route.path, 
           end: true,
-          // Allow partial matches for parent routes
           exact: !route.parent 
         }, 
         pathname
@@ -74,7 +73,6 @@ const Breadcrumb = () => {
     let currentPath = '';
     const pathSegments = location.pathname.split('/').filter(Boolean);
 
-    // Always add home for non-home pages
     if (location.pathname !== '/') {
       items.push({ name: 'Home', path: '/' });
     }
@@ -85,7 +83,6 @@ const Breadcrumb = () => {
       const route = findMatchingRoute(currentPath);
 
       if (route) {
-        // Handle parent routes if defined
         if (route.parent) {
           const parentPath = route.parent.replace(
             /:([^/]+)/g, 
@@ -110,7 +107,6 @@ const Breadcrumb = () => {
           path: currentPath
         });
       } else {
-        // Only add fallback if we haven't found a matching route
         const previousPath = pathSegments.slice(0, index).join('/');
         const previousRoute = findMatchingRoute(`/${previousPath}`);
         
