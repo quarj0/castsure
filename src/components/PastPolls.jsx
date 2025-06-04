@@ -73,8 +73,8 @@ const PastPolls = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-red-500 text-xl mb-4">{error}</h1>
-          <Link to="/" className="text-blue-600 hover:text-blue-800">
-            Back Home
+          <Link to="/dashboard" className="text-blue-600 hover:text-blue-800">
+            Back to Dashboard
           </Link>
         </div>
       </div>

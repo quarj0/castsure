@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import PropTypes from "prop-types";
 import axiosInstance from "../apis/api";
-import { FaSearch, FaPlus, FaCalendarAlt, FaArchive } from "react-icons/fa";
+import { FaSearch, FaPlus, FaCalendarAlt, FaArchive, FaClock, FaPlay } from "react-icons/fa";
 import CountdownTimer from "./CountdownTimer";
 
 const DashBoard = () => {
-  const [upcomingPolls, setUpcomingPolls] = useState([]);
+  const [incomingPolls, setIncomingPolls] = useState([]);
   const [pastPolls, setPastPolls] = useState([]);
   const [activePolls, setActivePolls] = useState([]);
+  const [allPolls, setAllPolls] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -18,9 +20,20 @@ const DashBoard = () => {
       try {
         setLoading(true);
         const response = await axiosInstance.get("polls/list/");
-        setActivePolls(response.data.filter((poll) => poll.active));
-        setUpcomingPolls(activePolls.filter(poll => new Date(poll.start_time) > now))
-        setPastPolls(activePolls.filter(poll => new Date(poll.end_time < now)));
+        const polls = response.data;
+        
+        setAllPolls(polls);
+        
+        // Categorize polls based on start_time and end_time
+        const incoming = polls.filter(poll => new Date(poll.start_time) > now);
+        const active = polls.filter(poll => 
+          new Date(poll.start_time) <= now && new Date(poll.end_time) > now
+        );
+        const past = polls.filter(poll => new Date(poll.end_time) <= now);
+        
+        setIncomingPolls(incoming);
+        setActivePolls(active);
+        setPastPolls(past);
       } catch (error) {
         console.error("Error fetching polls:", error);
       } finally {
@@ -35,7 +48,11 @@ const DashBoard = () => {
     setSearchTerm(e.target.value);
   };
 
-  const filteredPolls = upcomingPolls.filter((poll) =>
+  const filteredIncomingPolls = incomingPolls.filter((poll) =>
+    poll.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredActivePolls = activePolls.filter((poll) =>
     poll.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -54,9 +71,79 @@ const DashBoard = () => {
     show: { opacity: 1, y: 0 },
   };
 
+  const PollCard = ({ poll, isPast = false }) => (
+    <motion.div
+      variants={item}
+      className={`bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition-shadow ${
+        isPast ? 'opacity-75 hover:opacity-100' : ''
+      }`}
+    >
+      <Link to={isPast ? `/poll/${poll.id}/results` : `/polls/${poll.id}/contestants`}>
+        <img
+          src={
+            poll.poll_image ||
+            "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZSBOb3QgQXZhaWxhYmxlPC90ZXh0Pjwvc3ZnPg=="
+          }
+          alt={poll.title}
+          className={`w-full h-48 object-cover ${isPast ? 'filter grayscale' : ''}`}
+        />
+        <div className="p-4">
+          <h3 className="font-semibold text-lg mb-2 line-clamp-1">
+            {poll.title}
+          </h3>
+          <p className="text-gray-600 text-sm mb-2 line-clamp-2">
+            {poll.description}
+          </p>
+          {!isPast && (
+            <div className="flex items-center justify-between mb-2">
+              <CountdownTimer startTime={poll.start_time} endTime={poll.end_time} />
+            </div>
+          )}
+          <div className="flex items-center text-sm text-gray-500">
+            <FaCalendarAlt className="mr-2" />
+            <span className="text-xs">
+              {new Date(poll.start_time).toLocaleDateString()}
+            </span>
+          </div>
+          {isPast && (
+            <div className="mt-2">
+              <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
+                View Results
+              </span>
+            </div>
+          )}
+        </div>
+      </Link>
+    </motion.div>
+  );
+
+  // PropTypes for PollCard
+  PollCard.propTypes = {
+    poll: PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      title: PropTypes.string.isRequired,
+      description: PropTypes.string,
+      poll_image: PropTypes.string,
+      start_time: PropTypes.string.isRequired,
+      end_time: PropTypes.string.isRequired,
+    }).isRequired,
+    isPast: PropTypes.bool,
+  };
+
+  const LoadingSkeleton = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      {[1, 2, 3].map((n) => (
+        <div key={n} className="animate-pulse">
+          <div className="h-48 bg-gray-200 rounded-lg mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Welcome Banner */}
       <section className="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-12">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl font-bold mb-4">
@@ -99,14 +186,24 @@ const DashBoard = () => {
       {/* Quick Stats */}
       <section className="py-8">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <motion.div
+              className="bg-white p-6 rounded-lg shadow-sm"
+              whileHover={{ y: -5 }}
+              transition={{ duration: 0.2 }}
+            >
+              <h3 className="text-lg font-semibold mb-2">Incoming Polls</h3>
+              <p className="text-3xl font-bold text-blue-600">
+                {incomingPolls.length}
+              </p>
+            </motion.div>
             <motion.div
               className="bg-white p-6 rounded-lg shadow-sm"
               whileHover={{ y: -5 }}
               transition={{ duration: 0.2 }}
             >
               <h3 className="text-lg font-semibold mb-2">Active Polls</h3>
-              <p className="text-3xl font-bold text-secondary-600">
+              <p className="text-3xl font-bold text-green-600">
                 {activePolls.length}
               </p>
             </motion.div>
@@ -116,7 +213,7 @@ const DashBoard = () => {
               transition={{ duration: 0.2 }}
             >
               <h3 className="text-lg font-semibold mb-2">Past Polls</h3>
-              <p className="text-3xl font-bold text-secondary-600">
+              <p className="text-3xl font-bold text-gray-600">
                 {pastPolls.length}
               </p>
             </motion.div>
@@ -127,39 +224,31 @@ const DashBoard = () => {
             >
               <h3 className="text-lg font-semibold mb-2">Total Polls</h3>
               <p className="text-3xl font-bold text-secondary-600">
-                {activePolls.length + pastPolls.length}
+                {allPolls.length}
               </p>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Upcoming Events */}
-      <section className="py-8">
+      {/* Active Polls */}
+      <section className="py-8 bg-green-50">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold flex items-center">
-              <FaCalendarAlt className="mr-2 text-secondary-600" />
-              Upcoming Events
+              <FaPlay className="mr-2 text-green-600" />
+              Active Polls
             </h2>
             <Link
-              to="/upcoming/events"
-              className="text-secondary-600 hover:text-secondary-700 font-medium"
+              to="/active/polls"
+              className="text-green-600 hover:text-green-700 font-medium"
             >
               View All
             </Link>
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {[1, 2, 3].map((n) => (
-                <div key={n} className="animate-pulse">
-                  <div className="h-48 bg-gray-200 rounded-lg mb-4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                </div>
-              ))}
-            </div>
+            <LoadingSkeleton />
           ) : (
             <motion.div
               variants={container}
@@ -167,45 +256,60 @@ const DashBoard = () => {
               animate="show"
               className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
             >
-              {filteredPolls.map((poll) => (
-                <motion.div
-                  key={poll.id}
-                  variants={item}
-                  className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition-shadow"
-                >
-                  <Link to={`/polls/${poll.id}/contestants`}>
-                    <img
-                      src={poll.poll_image}
-                      alt={poll.title}
-                      className="w-full h-48 object-cover"
-                    />
-                    <div className="p-4">
-                      <h3 className="font-semibold text-lg mb-2 line-clamp-1">
-                        {poll.title}
-                      </h3>
-                      <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-                        {poll.description}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <CountdownTimer startTime={poll.start_time} endTime={poll.end_time} />
-                      </div>
-                      <div className="flex items-center text-sm text-gray-500 mt-2">
-                        <FaCalendarAlt className="mr-2" />
-                        <span className="text-xs">
-                          {new Date(poll.start_time).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
+              {filteredActivePolls.slice(0, 6).map((poll) => (
+                <PollCard key={poll.id} poll={poll} />
               ))}
             </motion.div>
           )}
 
-          {!loading && filteredPolls.length === 0 && (
+          {!loading && filteredActivePolls.length === 0 && (
             <div className="text-center py-12">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                No upcoming events found
+                No active polls found
+              </h3>
+              <p className="text-gray-500">
+                Check back when polls are live
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Incoming Polls */}
+      <section className="py-8">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold flex items-center">
+              <FaClock className="mr-2 text-blue-600" />
+              Incoming Polls
+            </h2>
+            <Link
+              to="/incoming/polls"
+              className="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              View All
+            </Link>
+          </div>
+
+          {loading ? (
+            <LoadingSkeleton />
+          ) : (
+            <motion.div
+              variants={container}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
+            >
+              {filteredIncomingPolls.slice(0, 6).map((poll) => (
+                <PollCard key={poll.id} poll={poll} />
+              ))}
+            </motion.div>
+          )}
+
+          {!loading && filteredIncomingPolls.length === 0 && (
+            <div className="text-center py-12">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No incoming polls found
               </h3>
               <p className="text-gray-500">
                 Create a new poll or check back later
@@ -215,57 +319,47 @@ const DashBoard = () => {
         </div>
       </section>
 
-      {/* Past Events */}
+      {/* Past Polls */}
       <section className="py-8 bg-gray-100">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold flex items-center">
-              <FaArchive className="mr-2 text-secondary-600" />
-              Past Events
+              <FaArchive className="mr-2 text-gray-600" />
+              Past Polls
             </h2>
             <Link
-              to="/past/events"
-              className="text-secondary-600 hover:text-secondary-700 font-medium"
+              to="/past/polls"
+              className="text-gray-600 hover:text-gray-700 font-medium"
             >
               View All
             </Link>
           </div>
 
-          <motion.div
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
-          >
-            {pastPolls.slice(0, 3).map((poll) => (
-              <motion.div
-                key={poll.id}
-                variants={item}
-                className="bg-white rounded-lg shadow-sm overflow-hidden opacity-75 hover:opacity-100 transition-opacity"
-              >
-                <img
-                  src={
-                    poll.poll_image ||
-                    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZSBOb3QgQXZhaWxhYmxlPC90ZXh0Pjwvc3ZnPg=="
-                  }
-                  alt={poll.title}
-                  className="w-full h-48 object-cover filter grayscale"
-                />
-                <div className="p-4">
-                  <h3 className="font-semibold text-lg mb-2">{poll.title}</h3>
-                  <p className="text-gray-600 text-sm mb-2">
-                    {poll.description}
-                  </p>
-                  <Link
-                    to={`/poll/${poll.id}/results`}
-                    className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    View Results
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
+          {loading ? (
+            <LoadingSkeleton />
+          ) : (
+            <motion.div
+              variants={container}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
+            >
+              {pastPolls.slice(0, 6).map((poll) => (
+                <PollCard key={poll.id} poll={poll} isPast={true} />
+              ))}
+            </motion.div>
+          )}
+
+          {!loading && pastPolls.length === 0 && (
+            <div className="text-center py-12">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No past polls found
+              </h3>
+              <p className="text-gray-500">
+                Completed polls will appear here
+              </p>
+            </div>
+          )}
         </div>
       </section>
     </div>
@@ -273,4 +367,3 @@ const DashBoard = () => {
 };
 
 export default DashBoard;
-
