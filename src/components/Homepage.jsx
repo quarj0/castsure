@@ -34,8 +34,6 @@ const Homepage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isVisible, setIsVisible] = useState(false);
 
-  // SEO Metadata
-
   useEffect(() => {
     setIsVisible(true);
   }, []);
@@ -69,7 +67,6 @@ const Homepage = () => {
     fetchPolls();
   }, []);
 
-  // Handle Search Input
   const handleSearch = (event) => {
     const searchValue = event.target.value.toLowerCase();
     setSearchTerm(searchValue);
@@ -315,7 +312,7 @@ const Homepage = () => {
               <img
                 src={LaptopImage}
                 alt="Create Poll"
-                className="rounded-xl shadow-2xl"
+                className="rounded-xl shadow-soft-2xl"
               />
             </motion.div>
           </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import axiosInstance from "../apis/api";
 import { Link } from "react-router-dom";
-import { FaArrowAltCircleLeft, FaClock, FaUsers } from "react-icons/fa";
+import { FaArrowAltCircleLeft, FaClock } from "react-icons/fa";
 import { format } from "date-fns";
 import CountdownTimer from "./CountdownTimer";
 import { motion } from "framer-motion";
@@ -34,6 +34,7 @@ const UpcomingPolls = () => {
     return currentDate <= endTime;
   }).sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
 
+  // eslint-disable-next-line no-unused-vars
   const truncateText = (text, maxLength = 100) =>
     text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
 
@@ -89,7 +90,7 @@ const UpcomingPolls = () => {
             Upcoming Polls
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Discover and participate in our latest voting events. Don't miss out on having your say!
+            Discover and participate in our latest voting events. Don&apos;t miss out on having your say!
           </p>
         </div>
 

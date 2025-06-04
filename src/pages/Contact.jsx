@@ -40,7 +40,7 @@ const Contact = () => {
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="p-8">
-              <h1 className="text-4xl font-bold mb-8 text-gray-900">Contact Us</h1>
+              <h1 className="text-4xl text-center font-bold mb-8 text-gray-900">Contact Us</h1>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Contact Form */}
@@ -110,27 +110,26 @@ const Contact = () => {
                   
                   <div className="space-y-4">
                     <div className="flex items-start space-x-4">
-                      <FaMapMarkerAlt className="text-secondary-600 mt-1" />
+                      <FaMapMarkerAlt className="text-sunset-600 mt-1" />
                       <div>
                         <h3 className="font-medium text-gray-900">Address</h3>
-                        <p className="text-gray-600">Ejisu, Kumasi-Accra Road Ghana</p>
+                        <p className="text-gray-600">Ejisu, Kumasi, Ashanti, Ghana</p>
                       </div>
                     </div>
                     
                     <div className="flex items-start space-x-4">
-                      <FaPhone className="text-secondary-600 mt-1" />
+                      <FaPhone className="text-gray-600 mt-1" />
                       <div>
                         <h3 className="font-medium text-gray-900">Phone</h3>
-                        <p className="text-gray-600">(233) 559-537-405</p>
                         <p className="text-gray-600">(233) 595-603-554</p>
                       </div>
                     </div>
                     
                     <div className="flex items-start space-x-4">
-                      <FaEnvelope className="text-secondary-600 mt-1" />
+                      <FaEnvelope className="text-gray-600 mt-1" />
                       <div>
                         <h3 className="font-medium text-gray-900">Email</h3>
-                        <p className="text-gray-600">guidemelearn.info@gmail.com</p>
+                        <p className="text-gray-600">info@castsure.vote</p>
                       </div>
                     </div>
                   </div>

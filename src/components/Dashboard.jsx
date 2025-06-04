@@ -3,22 +3,24 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import axiosInstance from "../apis/api";
 import { FaSearch, FaPlus, FaCalendarAlt, FaArchive } from "react-icons/fa";
-import ContestantsPage from "./ContestantsPage";
 import CountdownTimer from "./CountdownTimer";
 
 const DashBoard = () => {
   const [upcomingPolls, setUpcomingPolls] = useState([]);
   const [pastPolls, setPastPolls] = useState([]);
+  const [activePolls, setActivePolls] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchPolls = async () => {
+      const now = new Date();
       try {
         setLoading(true);
         const response = await axiosInstance.get("polls/list/");
-        setUpcomingPolls(response.data.filter((poll) => poll.active));
-        setPastPolls(response.data.filter((poll) => !poll.active));
+        setActivePolls(response.data.filter((poll) => poll.active));
+        setUpcomingPolls(activePolls.filter(poll => new Date(poll.start_time) > now))
+        setPastPolls(activePolls.filter(poll => new Date(poll.end_time < now)));
       } catch (error) {
         console.error("Error fetching polls:", error);
       } finally {
@@ -105,7 +107,7 @@ const DashBoard = () => {
             >
               <h3 className="text-lg font-semibold mb-2">Active Polls</h3>
               <p className="text-3xl font-bold text-secondary-600">
-                {upcomingPolls.length}
+                {activePolls.length}
               </p>
             </motion.div>
             <motion.div
@@ -125,7 +127,7 @@ const DashBoard = () => {
             >
               <h3 className="text-lg font-semibold mb-2">Total Polls</h3>
               <p className="text-3xl font-bold text-secondary-600">
-                {upcomingPolls.length + pastPolls.length}
+                {activePolls.length + pastPolls.length}
               </p>
             </motion.div>
           </div>

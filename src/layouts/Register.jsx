@@ -46,7 +46,7 @@ const RegisterPage = () => {
     setLoading(true);
 
     try {
-      await axiosInstance.post("auth/register/", {
+      await axiosInstance.post("/auth/register/", {
         username: formData.username,
         account_number: formData.accountNumber,
         email: formData.email,
@@ -112,7 +112,7 @@ const RegisterPage = () => {
           Create Your Account
         </h1>
         <p className="text-lg md:text-xl text-center max-w-md">
-          Join VoteLab today and start creating engaging polls for your audience.
+          Join CastSure today and start creating engaging polls for your audience.
         </p>
       </motion.div>
 
@@ -164,7 +164,7 @@ const RegisterPage = () => {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={loading}
-              className={`w-full py-3 px-4 rounded-lg text-white font-semibold flex items-center justify-center space-x-2 ${
+              className={`w-full py-3 px-4 rounded-lg text-gray-50 font-semibold flex items-center justify-center space-x-2 ${
                 loading
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700"

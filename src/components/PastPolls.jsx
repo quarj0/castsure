@@ -29,8 +29,9 @@ const PastPolls = () => {
   }, []);
 
   const filteredPolls = useMemo(() => {
+    const now = new Date();
     return polls
-      .filter((poll) => !poll.active) 
+      .filter((poll) => new Date(poll.end_time < now)) 
       .filter((poll) => {
         if (filter === "all") return true;
         return poll.poll_type === filter;
@@ -145,7 +146,7 @@ const PastPolls = () => {
                     <div className="space-y-2 mb-4">
                       <div className="flex items-center text-gray-600">
                         <FaCalendarAlt className="mr-2" />
-                        <span className="text-sm">Started: {formatDate(poll.start_time)}</span>
+                        <span className="text-sm">Ended: {formatDate(poll.end_time)}</span>
                       </div>
                       <div className="flex items-center text-gray-600">
                         <FaClock className="mr-2" />

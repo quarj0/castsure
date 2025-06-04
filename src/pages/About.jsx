@@ -58,9 +58,9 @@ const About = () => {
                 industry standards for digital voting security and reliability.
               </p>
 
-              <div className="bg-primary-50 p-6 rounded-lg mb-6">
-                <h3 className="text-xl font-semibold mb-3 text-secondary-800 font-montserrat">Why Choose Cast Sure?</h3>
-                <ul className="space-y-2 text-secondary-700 font-lato">
+              <div className="bg-sunset-50 p-6 rounded-lg mb-6">
+                <h3 className="text-xl font-semibold mb-3 text-sunset-700 font-montserrat">Why Choose Cast Sure?</h3>
+                <ul className="space-y-2 text-accent-700 font-lato">
                   <li>✓ Enterprise-grade security protocols</li>
                   <li>✓ Real-time results and analytics</li>
                   <li>✓ Customizable voting experiences</li>

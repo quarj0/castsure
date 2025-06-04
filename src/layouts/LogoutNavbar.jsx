@@ -1,10 +1,6 @@
-// Edit this Navbar for navigation after logout using tailwindcss for styling
-// the links are home, login, and register, about, services, and contact
-
 import { Disclosure } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Link, useLocation } from "react-router-dom";
-import logo from "../assets/castsure-logo.jpeg";
 
 export default function Navbar() {
   const location = useLocation();
@@ -35,17 +31,12 @@ export default function Navbar() {
       href: "/login",
       current: location.pathname === "/login",
     },
-    {
-      name: "Register",
-      href: "/register",
-      current: location.pathname === "/register",
-    },
   ];
 
   return (
     <Disclosure
       as="nav"
-      className="bg-white shadow-md fixed w-full z-10 top-0     "
+      className="bg-gray-50 shadow-transparent sticky w-full z-10 top-0     "
     >
       {({ open }) => (
         <>
@@ -53,7 +44,7 @@ export default function Navbar() {
             <div className="relative flex items-center justify-between h-16">
               <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
                 {/* Mobile menu button*/}
-                <Disclosure.Button className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
+                <Disclosure.Button className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
                   <span className="sr-only">Open main menu</span>
                   {open ? (
                     <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
@@ -64,7 +55,7 @@ export default function Navbar() {
               </div>
               <div className="flex-1 flex items-center justify-center sm:items-stretch sm:justify-start">
                 <div className="flex-shrink-0">
-                  <img className="h-8 w-auto" src={logo} alt="Castsure Logo" />
+                  <Link to={"/"} className="font-poppins font-semibold text-sunset-700">castsure.vote</Link>
                 </div>
                 <div className="hidden sm:block sm:ml-6">
                   <div className="flex space-x-4">
@@ -72,8 +63,8 @@ export default function Navbar() {
                       <Link
                         key={item.name}
                         to={item.href}
-                        className={`text-gray-900 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium ${
-                          item.current ? "bg-gray-900 text-white" : ""
+                        className={`text-primary-500 hover:bg-primary-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium ${
+                          item.current ? "bg-primary-600 text-white" : ""
                         }`}
                       >
                         {item.name}
@@ -92,8 +83,8 @@ export default function Navbar() {
                   key={item.name}
                   as={Link}
                   to={item.href}
-                  className={`text-gray-900 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium ${
-                    item.current ? "bg-gray-900 text-white" : ""
+                  className={`text-primary-400 hover:bg-primary-500 hover:text-gray-50 block px-3 py-2 rounded-md text-base font-medium ${
+                    item.current ? "bg-primary-700 text-gray-50" : ""
                   }`}
                 >
                   {item.name}

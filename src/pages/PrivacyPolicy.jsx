@@ -17,7 +17,7 @@ const PrivacyPolicy = () => {
 
             <section className="mb-8">
               <div className="flex items-center mb-4">
-                <FaShieldAlt className="text-secondary-600 text-xl mr-2" />
+                <FaShieldAlt className="text-accent-600 text-xl mr-2" />
                 <h2 className="text-2xl font-semibold text-gray-800">Information We Collect</h2>
               </div>
               <p className="text-gray-600">
@@ -29,7 +29,7 @@ const PrivacyPolicy = () => {
 
             <section className="mb-8">
               <div className="flex items-center mb-4">
-                <FaLock className="text-secondary-600 text-xl mr-2" />
+                <FaLock className="text-accent-600 text-xl mr-2" />
                 <h2 className="text-2xl font-semibold text-gray-800">How We Use Your Information</h2>
               </div>
               <ul className="list-disc pl-6 text-gray-600 space-y-2">
@@ -43,7 +43,7 @@ const PrivacyPolicy = () => {
 
             <section className="mb-8">
               <div className="flex items-center mb-4">
-                <FaUserShield className="text-secondary-600 text-xl mr-2" />
+                <FaUserShield className="text-accent-600 text-xl mr-2" />
                 <h2 className="text-2xl font-semibold text-gray-800">Data Protection</h2>
               </div>
               <p className="text-gray-600">
@@ -55,7 +55,7 @@ const PrivacyPolicy = () => {
 
             <section className="mb-8">
               <div className="flex items-center mb-4">
-                <FaCookieBite className="text-secondary-600 text-xl mr-2" />
+                <FaCookieBite className="text-accent-600 text-xl mr-2" />
                 <h2 className="text-2xl font-semibold text-gray-800">Cookies</h2>
               </div>
               <p className="text-gray-600">
@@ -71,7 +71,7 @@ const PrivacyPolicy = () => {
                 If you have any questions about this Privacy Policy, please contact us at:{" "}
                 <a
                   href="mailto:support@castsure.vote"
-                  className="text-secondary-600 hover:text-secondary-700"
+                  className="text-accent-600 hover:text-accent-700"
                 >
                   support@castsure.vote
                 </a>

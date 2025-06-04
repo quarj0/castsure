@@ -3,7 +3,6 @@ import {
   FaInstagram,
   FaLinkedinIn,
   FaMapMarkerAlt,
-  FaPhone,
   FaTwitter,
   FaWhatsapp,
 } from "react-icons/fa";
@@ -32,57 +31,19 @@ const Footer = () => {
         </div>
       </div>
 
-      <footer className="py-10 bg-gradient-to-br from-gray-800 to-gray-950 text-white">
+      <footer className="py-5 bg-gradient-to-br from-gray-800 to-gray-900 text-gray-300">
         <div className="container mx-auto px-6">
           {/* Top Section */}
-          <div className="flex flex-col md:flex-row md:justify-between text-center md:text-left space-y-10 md:space-y-0">
-            {/* Quick Links */}
-            <div>
-              <h5 className="text-lg font-semibold mb-4 font-montserrat">Quick Links</h5>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    to="/"
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
-                    Home
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/about"
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
-                    About
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/services"
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
-                    Services
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/contact"
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
-                    Contact
-                  </Link>
-                </li>
-              </ul>
-            </div>
+          <div className="flex flex-col md:flex-row md:justify-between text-center md:text-left space-y-5 md:space-y-0">
+           
 
-            {/* Other Links */}
             <div>
-              <h5 className="text-lg font-semibold mb-4 font-montserrat">Legal</h5>
+              <h5 className="text-lg font-semibold text-white mb-4 font-montserrat">Legal</h5>
               <ul className="space-y-2">
                 <li>
                   <Link
                     to="/privacy-policy"
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-blue-400 hover:text-blue-500 transition-colors"
                   >
                     Privacy Policy
                   </Link>
@@ -90,7 +51,7 @@ const Footer = () => {
                 <li>
                   <Link
                     to="/terms"
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-blue-400 hover:text-blue-500 transition-colors"
                   >
                     Terms of Service
                   </Link>
@@ -98,17 +59,9 @@ const Footer = () => {
                 <li>
                   <Link
                     to="/faq"
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-blue-400 hover:text-blue-500 transition-colors"
                   >
                     FAQ
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/support"
-                    className="text-gray-400 hover:text-secondary-400 transition-colors font-lato"
-                  >
-                    Support
                   </Link>
                 </li>
               </ul>
@@ -118,31 +71,29 @@ const Footer = () => {
             <div className="block justify-center md:justify-start">
               <h5 className="text-lg font-semibold mb-4 font-montserrat">Contact Us</h5>
               <p className="text-gray-300 mb-4 flex items-center gap-2 font-lato">
-                <FaMapMarkerAlt className="text-xl text-secondary-400" />
+                <FaMapMarkerAlt className="text-xl text-red-400" />
                 Ejisu, Kumasi-Accra Road Ghana
               </p>
               <p className="text-gray-300 mb-4 flex items-center gap-2 font-lato">
-                <FaEnvelope className="text-xl text-secondary-400" />
-                support@castsure.com
+                <FaEnvelope className="text-xl text-gray-200" />
+                support@castsure.vote
               </p>
-              <p className="text-gray-400 mb-4">
-                <FaPhone className="text-xl mx-1" /> (233) 559-537-405
-              </p>
-              <p className="text-gray-400">
+              
+              <p className="text-gray-300 mb-4 flex items-center gap-2 font-lato">
                 <FaWhatsapp className="text-green-500 text-xl" />
-                (233) 595-603-554
+                +233595603554
               </p>
             </div>
 
             {/* Social Media */}
             <div>
-              <h5 className="text-lg font-semibold mb-4 font-montserrat">Connect With Us</h5>
+              <h5 className="text-lg font-semibold mb-4 font-montserrat">Connect With Developer</h5>
               <div className="flex justify-center md:justify-start space-x-4">
                 <a
                   href="https://instagram.com/castsure/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-secondary-400 transition-colors"
+                  className="text-blue-400 hover:text-blue-500 transition-colors"
                   aria-label="Follow us on Instagram"
                 >
                   <FaInstagram className="text-2xl hover:scale-110 transition-transform" />
@@ -151,7 +102,7 @@ const Footer = () => {
                   href="https://twitter.com/castsure/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-secondary-400 transition-colors"
+                  className="text-blue-400 hover:text-blue-500 transition-colors"
                   aria-label="Follow us on Twitter"
                 >
                   <FaTwitter className="text-2xl hover:scale-110 transition-transform" />
@@ -160,7 +111,7 @@ const Footer = () => {
                   href="https://linkedin.com/company/castsure"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className="text-blue-400 hover:text-blue-500 transition-colors"
                 >
                   <FaLinkedinIn className="text-2xl text-blue-400" />
                 </a>

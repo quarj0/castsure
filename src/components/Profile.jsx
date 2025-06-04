@@ -18,30 +18,11 @@ const Profile = ({ authTokens }) => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
 
-  const fetchPaymentHistory = useCallback(
-    async (url = "payment/history") => {
-      try {
-        setLoading(true);
-        const response = await axiosInstance.get(url, {
-          headers: {
-            Authorization: `Bearer ${authTokens.access}`,
-          },
-        });
-        setPaymentHistory(response.data);
-      } catch (error) {
-        setError("Failed to load payment history.");
-        console.error("Error fetching payment history:", error);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [authTokens.access]
-  );
 
   const fetchUser = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get("auth/user/", {
+      const response = await axiosInstance.get("/auth/user/", {
         headers: {
           Authorization: `Bearer ${authTokens.access}`,
         },
@@ -58,7 +39,7 @@ const Profile = ({ authTokens }) => {
 
   const fetchBalance = useCallback(async () => {
     try {
-      const response = await axiosInstance.get("payment/account/balance", {
+      const response = await axiosInstance.get("/payment/account/balance/", {
         headers: {
           Authorization: `Bearer ${authTokens.access}`,
         },

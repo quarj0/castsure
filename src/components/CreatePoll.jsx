@@ -36,7 +36,7 @@ const CreatePoll = () => {
   const [setupFee, setSetupFee] = useState(0);
   const [responseData, setResponseData] = useState(null);
   const [paystackDetails, setPaystackDetails] = useState(null);
-  const [paystackLoading, setPaystackLoading] = useState(false);
+  const [, setPaystackLoading] = useState(false);
   const [paystackSuccess, setPaystackSuccess] = useState("");
   const [paystackError, setPaystackError] = useState("");
 
@@ -436,6 +436,7 @@ const CreatePoll = () => {
             reference: res.data.reference,
           });
         } catch (err) {
+          console.error(err)
           setPaystackError("Failed to get payment details. Please refresh the page.");
         } finally {
           setPaystackLoading(false);
@@ -443,6 +444,7 @@ const CreatePoll = () => {
       }
     };
 
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     useEffect(() => {
       if (isCreatorPay && !paystackDetails) {
         fetchPaystackDetails();
@@ -457,6 +459,7 @@ const CreatePoll = () => {
         const verifyRes = await axiosInstance.get(`/payment/verify/${paystackDetails.reference}/`);
         setPaystackSuccess(verifyRes.data.message || "Payment verified successfully.");
       } catch (err) {
+        setPaystackError(err)
         setPaystackError("Payment verification failed. Please contact support if you were debited.");
       }
     };

@@ -2,7 +2,6 @@ import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FaCalendarAlt, FaUserFriends, FaVoteYea } from "react-icons/fa";
-import { formatDistanceToNow } from "date-fns";
 import CountdownTimer from "../components/CountdownTimer";
 
 const PollCard = ({ item, linkTo }) => {
