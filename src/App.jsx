@@ -48,7 +48,6 @@ const App = () => {
     return storedTokens ? { access: storedTokens } : null;
   });
 
-  // Provide default metadata
   const helmetContext = {};
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -125,7 +124,6 @@ const App = () => {
     <HelmetProvider context={helmetContext}>
       <Router>
         <div className="min-h-screen bg-gray-50">
-          {/* Conditionally render Navbar */}
           {authTokens && (
             <Navbar
               authTokens={authTokens}
@@ -163,7 +161,7 @@ const App = () => {
                   )
                 }
               />
-              <Route path="/dashboard" element={<DashBoard />} />
+              <Route path="/dashboard" element={<DashBoard authTokens={authTokens} />} />
               <Route path="/payment/new" element={<NewPaymentLink />} />
               <Route path="/poll/:pollId/results" element={<ResultsPage />} />
               <Route path="/poll/:pollId" element={<ResultsPage />} />

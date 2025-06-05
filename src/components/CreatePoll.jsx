@@ -89,12 +89,16 @@ const CreatePoll = () => {
       let fee = 0;
       
       if (expectedVoters >= 20) {
-        // 20-100 voters: 1.5 GHS per voter
-        if (expectedVoters <= 100) {
+        // 20-75 voters: 1.5 GHS per voter
+        if (expectedVoters <= 75) {
           fee = expectedVoters * 1.5;
         }
-        // 101-350 voters: 0.8 GHS per voter
-        else if (expectedVoters <= 350) {
+        // 76-150 voters: 1.2 GHS per voter
+        else if (expectedVoters <= 150 && expectedVoters >= 76) {
+          fee = expectedVoters * 1.2;
+        }
+        // 151-350 voters: 0.8 GHS per voter
+        else if (expectedVoters <= 350 && expectedVoters >= 151) {
           fee = expectedVoters * 0.8;
         }
       }

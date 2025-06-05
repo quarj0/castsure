@@ -6,22 +6,27 @@ import axiosInstance from "../apis/api";
 import { FaSearch, FaPlus, FaCalendarAlt, FaArchive, FaClock, FaPlay } from "react-icons/fa";
 import CountdownTimer from "./CountdownTimer";
 
-const DashBoard = () => {
+const DashBoard = ({authTokens}) => {
   const [incomingPolls, setIncomingPolls] = useState([]);
   const [pastPolls, setPastPolls] = useState([]);
   const [activePolls, setActivePolls] = useState([]);
   const [allPolls, setAllPolls] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchPolls = async () => {
       const now = new Date();
       try {
         setLoading(true);
-        const response = await axiosInstance.get("polls/list/");
-        const polls = response.data;
+        console.log('Fetching polls...');
+        console.log('Auth token:', authTokens);
         
+        const response = await axiosInstance.get("polls/list/");
+        console.log('Polls response:', response.data);
+        
+        const polls = response.data;
         setAllPolls(polls);
         
         // Categorize polls based on start_time and end_time
@@ -31,18 +36,21 @@ const DashBoard = () => {
         );
         const past = polls.filter(poll => new Date(poll.end_time) <= now);
         
+        console.log('Categorized polls:', { incoming, active, past });
+        
         setIncomingPolls(incoming);
         setActivePolls(active);
         setPastPolls(past);
       } catch (error) {
         console.error("Error fetching polls:", error);
+        setError(error.response?.data?.detail || 'Failed to fetch polls');
       } finally {
         setLoading(false);
       }
     };
 
     fetchPolls();
-  }, []);
+  }, [authTokens]);
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
@@ -367,3 +375,9 @@ const DashBoard = () => {
 };
 
 export default DashBoard;
+
+DashBoard.propTypes = {
+  authTokens: PropTypes.shape({
+    access: PropTypes.string.isRequired,
+  }).isRequired,
+};
