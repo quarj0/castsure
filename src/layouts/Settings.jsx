@@ -160,10 +160,7 @@ const Settings = ({ authTokens }) => {
 export default Settings;
 
 Settings.propTypes = {
-  authTokens: PropTypes.shape({
-    access: PropTypes.string.isRequired,
-    refresh: PropTypes.string.isRequired
-  }).isRequired,
+  authTokens: PropTypes.object.isRequired,
 };
 
 Message.propTypes = {

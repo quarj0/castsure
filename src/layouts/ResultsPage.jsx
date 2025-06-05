@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,7 +11,6 @@ import {
   FaVoteYea,
 } from "react-icons/fa";
 import avatar from "../assets/user-icon.jpg";
-import PropTypes from "prop-types";
 
 import {
   ResponsiveContainer,
@@ -82,7 +80,7 @@ const ResultsPage = () => {
         newPollDetails = pollResponse.data;
 
         // Check if poll is still active
-        const pollData = pollResponse.data;
+        const pollData = pollResponse.data.poll;
         const now = new Date(new Date().toISOString());
         const startTime = new Date(pollData.start_time);
         const endTime = new Date(pollData.end_time);
@@ -146,62 +144,12 @@ const ResultsPage = () => {
       };
     }
 
-    // Handle the new API response structure
-    if (data.poll_title) {
-      const categories = {};
-      const categoryList = [];
-      let totalVotes = 0;
-
-      // Process votes into categories
-      if (data.votes) {
-        data.votes.forEach(vote => {
-          const category = vote.category || 'Uncategorized';
-          if (!categories[category]) {
-            categories[category] = {
-              contestants: [],
-              total_votes: 0
-            };
-            categoryList.push(category);
-          }
-
-          const contestant = {
-            name: vote.name || `Contestant #${vote.contestant}`,
-            vote_count: vote.total_votes || 0,
-            image: getImageUrl(vote.image),
-            percentage: 0
-          };
-
-          categories[category].contestants.push(contestant);
-          categories[category].total_votes += contestant.vote_count;
-          totalVotes += contestant.vote_count;
-        });
-
-        // Calculate percentages
-        categoryList.forEach(category => {
-          const categoryTotal = categories[category].total_votes;
-          if (categoryTotal > 0) {
-            categories[category].contestants.forEach(contestant => {
-              contestant.percentage = ((contestant.vote_count / categoryTotal) * 100).toFixed(1);
-            });
-          }
-        });
-      }
-
-      return {
-        results: [],
-        categories,
-        categoryList,
-        totalVotes
-      };
-    }
-
     return { results: [], categories: {}, categoryList: [], totalVotes: 0 };
   };
 
   const getDynamicColor = (index, total) =>
     `hsl(${(index * 360) / total}, 70%, 50%)`;
 
-  // eslint-disable-next-line no-unused-vars
   const getVotePercentage = (votes) => {
     const totalVotes = results.reduce(
       (acc, result) => acc + result.vote_count,
@@ -490,7 +438,7 @@ const ResultsPage = () => {
       return;
     }
     try {
-      const wsUrl = `${process.env.REACT_APP_WS_URL || 'ws://localhost:8000'}/ws/poll/${pollId}/`;
+      const wsUrl = `ws://localhost:8000/ws/poll/${pollId}/`;
       console.log('Connecting to WebSocket:', wsUrl);
       wsRef.current = new WebSocket(wsUrl);
       wsRef.current.onopen = () => {
@@ -585,98 +533,22 @@ const ResultsPage = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        setLoading(true);
-        setError("");
-
-        // First try to get poll details to check if it's active
-        try {
-          const pollResponse = await axiosInstance.get(`/polls/${pollId}/`);
-          setIsActive(true);
-          // If we get here, the poll is active, so we'll use WebSocket
-          setupWebSocket();
-        } catch (error) {
-          // If we get a 400 error, the poll is not active
-          if (error.response?.status === 400) {
-            setIsActive(false);
-            // For ended polls, fetch results directly
-            const endedPollResults = await axiosInstance.get(`/vote/results/${pollId}/`);
-            setResults(endedPollResults.data);
-            setTotalVotes(endedPollResults.data.total_votes);
-            setPollDetails({
-              title: endedPollResults.data.poll_title,
-              categories: endedPollResults.data.category_list
-            });
-            const processedData = processResults(endedPollResults.data);
-            setPollData(processedData);
-          } else {
-            // For other errors, show error message
-            setError("Failed to fetch poll data");
-          }
+        const response = await fetch(`http://localhost:8000/polls/${pollId}/`);
+        if (response.ok) {
+          const data = await response.json();
+          setPollData(data);
+          setIsActive(!!data.active);
+          const total = data.votes?.reduce((sum, vote) => sum + (vote.total_votes || 0), 0) || 0;
+          setTotalVotes(total);
         }
       } catch (error) {
-        console.error("Error fetching initial poll data:", error);
-        setError("Failed to fetch poll results");
-      } finally {
-        setLoading(false);
+        console.error('Error fetching initial poll data:', error);
       }
     };
     if (pollId) {
       fetchInitialData();
     }
   }, [pollId]);
-
-  const setupWebSocket = () => {
-    if (wsRef.current) {
-      wsRef.current.close();
-    }
-
-    try {
-      const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:8000'}/ws/poll/${pollId}/`;
-      console.log('Connecting to WebSocket:', wsUrl);
-      wsRef.current = new WebSocket(wsUrl);
-      wsRef.current.onopen = () => {
-        console.log('WebSocket connected');
-        setIsConnected(true);
-        setConnectionError(null);
-        reconnectAttemptsRef.current = 0;
-      };
-
-      wsRef.current.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'poll_results') {
-            const results = data.poll_results;
-            setResults(results);
-            setTotalVotes(results.total_votes || 0);
-            setPollDetails({
-              title: results.poll_title,
-              categories: results.category_list
-            });
-            const processedData = processResults(results);
-            setPollData(processedData);
-          }
-        } catch (error) {
-          console.error('Error processing WebSocket message:', error);
-        }
-      };
-
-      wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        setConnectionError('Failed to connect to real-time updates');
-        setIsConnected(false);
-      };
-
-      wsRef.current.onclose = () => {
-        console.log('WebSocket disconnected');
-        setIsConnected(false);
-        handleWebSocketDisconnect();
-      };
-    } catch (error) {
-      console.error('Error setting up WebSocket:', error);
-      setConnectionError('Failed to setup real-time connection');
-      setIsConnected(false);
-    }
-  };
 
   // --- WebSocket connection management ---
   useEffect(() => {
@@ -695,9 +567,9 @@ const ResultsPage = () => {
     if (!isActive && pollId) {
       httpIntervalRef.current = setInterval(async () => {
         try {
-          const pollResponse = await axiosInstance.get(`/polls/${pollId}/`);
-          if (pollResponse.ok) {
-            const data = pollResponse.data;
+          const response = await fetch(`http://localhost:8000/polls/${pollId}/`);
+          if (response.ok) {
+            const data = await response.json();
             setPollData(data);
             const total = data.votes?.reduce((sum, vote) => sum + (vote.total_votes || 0), 0) || 0;
             setTotalVotes(total);
@@ -1017,20 +889,3 @@ const ResultsPage = () => {
 };
 
 export default ResultsPage;
-
-ResultsPage.propTypes = {
-  pollId: PropTypes.string,
-  axiosInstance: PropTypes.object,
-  isActive: PropTypes.bool,
-  setIsActive: PropTypes.func,
-  pollDetails: PropTypes.object,
-  setPollDetails: PropTypes.func,
-  results: PropTypes.array,
-  setResults: PropTypes.func,
-  loading: PropTypes.bool,
-  formatter: PropTypes.shape({
-    payload: PropTypes.shape({
-      percentage: PropTypes.number
-    })
-  })
-};

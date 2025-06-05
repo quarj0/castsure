@@ -5,10 +5,6 @@ import { FaCalendarAlt, FaUserFriends, FaVoteYea } from "react-icons/fa";
 import CountdownTimer from "../components/CountdownTimer";
 
 const PollCard = ({ item, linkTo }) => {
-  if (!item) {
-    return null;
-  }
-
   const { title, description, image, startTime, endTime, pollType, totalVotes } = item;
 
   const cardVariants = {
@@ -42,52 +38,40 @@ const PollCard = ({ item, linkTo }) => {
     >
       <Link to={linkTo} className="block">
         <div className="relative h-48 overflow-hidden">
-          {image && (
-            <motion.img
-              variants={imageVariants}
-              src={image}
-              alt={title || "Poll image"}
-              className="w-full h-full object-cover"
-            />
-          )}
-          {pollType && (
-            <div className="absolute top-4 right-4">
-              <span className={`
-                px-3 py-1 rounded-full text-xs font-medium
-                ${pollType === 'voters-pay' ? 'bg-accent-500' : 'bg-secondary-500'} text-white
-              `}>
-                {pollType === 'voters-pay' ? 'Voters Pay' : 'Creator Pay'}
-              </span>
-            </div>
-          )}
+          <motion.img
+            variants={imageVariants}
+            src={image}
+            alt={title}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute top-4 right-4">
+            <span className={`
+              px-3 py-1 rounded-full text-xs font-medium
+              ${pollType === 'voters-pay' ? 'bg-accent-500' : 'bg-secondary-500'} text-white
+            `}>
+              {pollType === 'voters-pay' ? 'Voters Pay' : 'Creator Pay'}
+            </span>
+          </div>
         </div>
         
         <div className="p-5">
-          {title && (
-            <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-1">
-              {title}
-            </h3>
-          )}
-          {description && (
-            <p className="text-gray-600 mb-4 line-clamp-2">
-              {description}
-            </p>
-          )}
+          <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-1">
+            {title}
+          </h3>
+          <p className="text-gray-600 mb-4 line-clamp-2">
+            {description}
+          </p>
           
           <div className="border-t border-gray-100 pt-4">
-            {startTime && endTime && (
-              <CountdownTimer startTime={startTime} endTime={endTime} />
-            )}
+            <CountdownTimer startTime={startTime} endTime={endTime} />
             
             <div className="flex items-center justify-between text-sm text-gray-500 mt-4">
-              {startTime && (
-                <div className="flex items-center">
-                  <FaCalendarAlt className="mr-2" />
-                  <span>
-                    {new Date(startTime).toLocaleDateString()}
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center">
+                <FaCalendarAlt className="mr-2" />
+                <span>
+                  {new Date(startTime).toLocaleDateString()}
+                </span>
+              </div>
               <div className="flex items-center">
                 <FaVoteYea className="mr-2" />
                 <span>{totalVotes || 0} votes</span>
@@ -115,14 +99,14 @@ const PollCard = ({ item, linkTo }) => {
 
 PollCard.propTypes = {
   item: PropTypes.shape({
-    title: PropTypes.string,
-    description: PropTypes.string,
-    image: PropTypes.string,
-    startTime: PropTypes.string,
-    endTime: PropTypes.string,
+    title: PropTypes.string.isRequired,
+    description: PropTypes.string.isRequired,
+    image: PropTypes.string.isRequired,
+    startTime: PropTypes.string.isRequired,
+    endTime: PropTypes.string.isRequired,
     pollType: PropTypes.string,
     totalVotes: PropTypes.number
-  }),
+  }).isRequired,
   linkTo: PropTypes.string.isRequired,
 };
 

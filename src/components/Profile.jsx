@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import { motion } from "framer-motion";
@@ -19,19 +18,6 @@ const Profile = ({ authTokens }) => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
 
-  const fetchPaymentHistory = useCallback(async () => {
-    try {
-      const response = await axiosInstance.get("/payment/history/", {
-        headers: {
-          Authorization: `Bearer ${authTokens.access}`,
-        },
-      });
-      setPaymentHistory(response.data);
-    } catch (error) {
-      console.error("Error fetching payment history:", error);
-      setPaymentHistory([]);
-    }
-  }, [authTokens.access]);
 
   const fetchUser = useCallback(async () => {
     try {
@@ -58,7 +44,7 @@ const Profile = ({ authTokens }) => {
           Authorization: `Bearer ${authTokens.access}`,
         },
       });
-      console.log("Balance response:", response.data); 
+      console.log("Balance response:", response.data); // Debug log
       setAvailableBalance(response.data.available_balance);
       setTotalWithdrawn(response.data.total_withdrawn);
       setTotalCollected(response.data.total_collected);
@@ -85,7 +71,7 @@ const Profile = ({ authTokens }) => {
     };
     
     loadData();
-  }, [authTokens, fetchBalance, fetchUser]);
+  }, [authTokens]);
 
   const handleProfileUpdate = () => {
     fetchUser();
@@ -310,7 +296,6 @@ const Profile = ({ authTokens }) => {
 Profile.propTypes = {
   authTokens: PropTypes.shape({
     access: PropTypes.string.isRequired,
-    refresh: PropTypes.string.isRequired
   }).isRequired,
 };
 
