@@ -31,7 +31,7 @@ const PastPolls = () => {
   const filteredPolls = useMemo(() => {
     const now = new Date();
     return polls
-      .filter((poll) => new Date(poll.end_time < now)) 
+      .filter((poll) => new Date(poll.end_time) <= now)
       .filter((poll) => {
         if (filter === "all") return true;
         return poll.poll_type === filter;

@@ -352,7 +352,7 @@ const Homepage = () => {
                     description: poll.description,
                     image: poll.poll_image,
                   }}
-                  linkTo={`/polls/${poll.id}/results`}
+                  linkTo={`/poll/${poll.id}/results`}
                 />
               </motion.div>
             ))}

@@ -44,8 +44,9 @@ import LogoutNavbar from "./layouts/LogoutNavbar";
 
 const App = () => {
   const [authTokens, setAuthTokens] = useState(() => {
-    const storedTokens = localStorage.getItem("access");
-    return storedTokens ? { access: storedTokens } : null;
+    const access = localStorage.getItem("access");
+    const refresh = localStorage.getItem("refresh");
+    return access && refresh ? { access, refresh } : null;
   });
 
   // Provide default metadata
