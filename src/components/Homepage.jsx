@@ -33,6 +33,7 @@ const Homepage = () => {
   const [filteredPolls, setFilteredPolls] = useState([]); 
   const [searchTerm, setSearchTerm] = useState("");
   const [isVisible, setIsVisible] = useState(false);
+  const [authTokens, setAuthTokens] = useState(null);
 
   useEffect(() => {
     setIsVisible(true);
@@ -45,20 +46,23 @@ const Homepage = () => {
         const response = await axiosInstance.get("polls/list/");
 
         const currentDateTime = new Date();
-        const filteredUpcomingPolls = response.data
+        // Filter for active polls only
+        const activePolls = response.data.filter(poll => poll.active);
+        
+        const filteredUpcomingPolls = activePolls
           .filter((poll) => {
             const endTime = new Date(poll.end_time).getTime();
             return currentDateTime <= endTime;
           })
           .slice(0, 3);
 
-        const filteredPastPolls = response.data
+        const filteredPastPolls = activePolls
           .filter((poll) => new Date(poll.start_time) <= currentDateTime)
           .slice(0, 10);
 
         setUpcomingPolls(filteredUpcomingPolls);
         setPastPolls(filteredPastPolls);
-        setFilteredPolls(response.data); 
+        setFilteredPolls(activePolls); 
       } catch (error) {
         console.error("Error fetching polls:", error);
       }
@@ -79,55 +83,65 @@ const Homepage = () => {
     setFilteredPolls(searchResults);
   };
 
-  return (
-    <div className="bg-gradient-to-br from-gray-50 to-white">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden pt-20 pb-12 lg:pt-[120px] lg:pb-[90px]">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-wrap items-center -mx-4">
-            <motion.div 
-              className="w-full lg:w-1/2 px-4"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: isVisible ? 1 : 0, x: isVisible ? 0 : -20 }}
-              transition={{ duration: 0.6 }}
+  // Add a section for creators
+  const renderCreatorSection = () => {
+    if (!authTokens) {
+      return (
+        <section className="py-16 bg-gray-50">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-3xl font-bold mb-4">Want to Create Your Own Poll?</h2>
+            <p className="text-gray-600 mb-8">Sign up to create and manage your own polls</p>
+            <Link
+              to="/register"
+              className="inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
-              <div className="mb-12 lg:mb-0">
-                <h1 className="text-4xl lg:text-6xl font-bold leading-tight mb-6">
-                  Create and Manage <br />
-                  <span className="text-secondary-600">Professional Polls</span> <br />
-                  with Ease
-                </h1>
-                <p className="text-gray-600 text-lg mb-8 max-w-lg">
-                  Create engaging polls, collect votes securely, and analyze results in real-time. Perfect for events, competitions, and decision-making.
-                </p>
-                <div className="flex flex-wrap items-center">
+              Sign Up Now
+            </Link>
+          </div>
+        </section>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <section className="py-20 bg-gradient-to-r from-primary-600 to-primary-800 text-white">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center">
+            <div className="md:w-1/2 mb-8 md:mb-0">
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                Create and Participate in Polls
+              </h1>
+              <p className="text-lg mb-8">
+                Join our platform to create engaging polls or vote in existing ones.
+                No account required to vote!
+              </p>
+              {!authTokens && (
+                <div className="space-x-4">
                   <Link
                     to="/register"
-                    className="inline-flex px-8 py-4 text-base font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors duration-200 mr-4 mb-4 lg:mb-0"
+                    className="inline-block px-6 py-3 bg-white text-primary-600 rounded-lg hover:bg-gray-100 transition-colors"
                   >
-                    Get Started Free
+                    Sign Up
                   </Link>
                   <Link
-                    to="#demo"
-                    className="inline-flex px-8 py-4 text-base font-medium text-secondary-600 hover:text-secondary-700 border border-primary-600 rounded-lg transition-colors duration-200"
+                    to="/login"
+                    className="inline-block px-6 py-3 border border-white text-white rounded-lg hover:bg-white/10 transition-colors"
                   >
-                    Watch Demo
+                    Log In
                   </Link>
                 </div>
-              </div>
-            </motion.div>
-            <motion.div 
-              className="w-full lg:w-1/2 px-4"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: isVisible ? 1 : 0, x: isVisible ? 0 : 20 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
+              )}
+            </div>
+            <div className="md:w-1/2">
               <img
                 src={LaptopImage}
-                alt="Voting System Dashboard"
-                className="rounded-xl shadow-soft-2xl"
+                alt="Voting Platform"
+                className="w-full h-auto rounded-lg shadow-xl"
               />
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
@@ -359,6 +373,9 @@ const Homepage = () => {
           </div>
         </div>
       </section>
+
+      {/* Add the creator section */}
+      {renderCreatorSection()}
     </div>
   );
 };

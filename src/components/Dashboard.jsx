@@ -5,6 +5,7 @@ import PropTypes from "prop-types";
 import axiosInstance from "../apis/api";
 import { FaSearch, FaPlus, FaCalendarAlt, FaArchive, FaClock, FaPlay } from "react-icons/fa";
 import CountdownTimer from "./CountdownTimer";
+import { useNavigate } from "react-router-dom";
 
 const DashBoard = () => {
   const [incomingPolls, setIncomingPolls] = useState([]);
@@ -13,6 +14,8 @@ const DashBoard = () => {
   const [allPolls, setAllPolls] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchPolls = async () => {
@@ -22,6 +25,7 @@ const DashBoard = () => {
         const response = await axiosInstance.get("polls/list/");
         const polls = response.data;
         
+        // If we get polls, user is authenticated and these are their polls
         setAllPolls(polls);
         
         // Categorize polls based on start_time and end_time
@@ -36,13 +40,19 @@ const DashBoard = () => {
         setPastPolls(past);
       } catch (error) {
         console.error("Error fetching polls:", error);
+        if (error.response?.status === 401) {
+          // User is not authenticated, redirect to login
+          navigate('/login');
+        } else {
+          setError("Failed to fetch polls. Please try again later.");
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchPolls();
-  }, []);
+  }, [navigate]);
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
@@ -141,6 +151,24 @@ const DashBoard = () => {
       ))}
     </div>
   );
+
+  // Add a check for authentication
+  if (!authTokens) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Please Log In</h1>
+          <p className="text-gray-600 mb-6">You need to be logged in to view your dashboard.</p>
+          <Link
+            to="/login"
+            className="inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            Log In
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
