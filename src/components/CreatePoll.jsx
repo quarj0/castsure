@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaImage,
@@ -35,42 +35,12 @@ const CreatePoll = () => {
   const [loading, setLoading] = useState(false);
   const [setupFee, setSetupFee] = useState(0);
   const [responseData, setResponseData] = useState(null);
-  const [paystackDetails, setPaystackDetails] = useState(null);
-  const [, setPaystackLoading] = useState(false);
+  const [paystackLoading, setPaystackLoading] = useState(false);
   const [paystackSuccess, setPaystackSuccess] = useState("");
   const [paystackError, setPaystackError] = useState("");
 
   const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
   const VOTER_CODES_URL = import.meta.env.VITE_API_URL;
-
-  useEffect(() => {
-    const fetchPaystackDetails = async () => {
-      if (
-        !paystackDetails &&
-        responseData?.payment_link &&
-        formData.poll_type === "creator-pay"
-      ) {
-        try {
-          setPaystackLoading(true);
-          const res = await axiosInstance.post('polls/create/');
-          setPaystackDetails({
-            amount: res.data.amount,
-            email: res.data.email,
-            reference: res.data.reference,
-          });
-        } catch (err) {
-          console.error(err);
-          setPaystackError(
-            "Failed to get payment details. Please refresh the page."
-          );
-        } finally {
-          setPaystackLoading(false);
-        }
-      }
-    };
-
-    fetchPaystackDetails();
-  }, [responseData, paystackDetails, formData.poll_type]);
 
   const handleInputChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -93,16 +63,16 @@ const CreatePoll = () => {
       let fee = 0;
 
       if (expectedVoters >= 20) {
-        // 20-75 voters: 1.5 GHS per voter
+        // 20-80 voters: 1.5 GHS per voter
         if (expectedVoters <= 80) {
           fee = expectedVoters * 1.5;
         }
-        // 76-150 voters: 1.2 GHS per voter
-        else if (expectedVoters <= 150 && expectedVoters >= 81) {
+        // 81-150 voters: 1.3 GHS per voter
+        else if (expectedVoters <= 150) {
           fee = expectedVoters * 1.3;
         }
-        // 151-350 voters: 0.8 GHS per voter
-        else if (expectedVoters <= 350 && expectedVoters >= 151) {
+        // 151-350 voters: 0.9 GHS per voter
+        else if (expectedVoters <= 350) {
           fee = expectedVoters * 0.9;
         }
       }
@@ -115,39 +85,51 @@ const CreatePoll = () => {
     const newErrors = {};
     switch (step) {
       case 0:
-        if (!formData.title) newErrors.title = "Title is required";
-        if (!formData.description)
+        if (!formData.title.trim()) newErrors.title = "Title is required";
+        if (!formData.description.trim())
           newErrors.description = "Description is required";
         break;
-      case 1:
+      case 1: {
         if (!formData.start_time)
           newErrors.start_time = "Start time is required";
         if (!formData.end_time) newErrors.end_time = "End time is required";
-        if (new Date(formData.end_time) <= new Date(formData.start_time)) {
+
+        const startTime = new Date(formData.start_time);
+        const endTime = new Date(formData.end_time);
+        const now = new Date();
+
+        if (startTime <= now) {
+          newErrors.start_time = "Start time must be in the future";
+        }
+        if (endTime <= startTime) {
           newErrors.end_time = "End time must be after start time";
         }
         break;
+      }
       case 2:
         if (!formData.poll_type) newErrors.poll_type = "Poll type is required";
-        if (formData.poll_type === "creator-pay" && !formData.expected_voters) {
-          newErrors.expected_voters = "Expected voters is required";
-        }
-        if (
-          formData.poll_type === "creator-pay" &&
-          formData.expected_voters > 350
-        ) {
-          newErrors.expected_voters =
-            "For more than 350 voters, please use the voters-pay model.";
-        } else if (
-          formData.poll_type === "creator-pay" &&
-          formData.expected_voters < 20
-        ) {
-          newErrors.expected_voters =
-            "Expected voters must be at least 20 for creator-pay polls.";
+
+        if (formData.poll_type === "creator-pay") {
+          if (!formData.expected_voters) {
+            newErrors.expected_voters = "Expected voters is required";
+          } else {
+            const voters = Number(formData.expected_voters);
+            if (voters < 20) {
+              newErrors.expected_voters =
+                "Expected voters must be at least 20 for creator-pay polls.";
+            } else if (voters > 350) {
+              newErrors.expected_voters =
+                "For more than 350 voters, please use the voters-pay model.";
+            }
+          }
         }
 
-        if (formData.poll_type === "voters-pay" && !formData.voting_fee) {
-          newErrors.voting_fee = "Voting fee is required";
+        if (formData.poll_type === "voters-pay") {
+          if (!formData.voting_fee) {
+            newErrors.voting_fee = "Voting fee is required";
+          } else if (Number(formData.voting_fee) <= 0) {
+            newErrors.voting_fee = "Voting fee must be greater than 0";
+          }
         }
         break;
       default:
@@ -180,13 +162,20 @@ const CreatePoll = () => {
       }
     });
 
+    // Add setup fee for creator-pay polls
+    if (formData.poll_type === "creator-pay" && setupFee > 0) {
+      submissionData.append("setup_fee", setupFee);
+    }
+
     setLoading(true);
+    setErrors({});
+
     try {
       const res = await axiosInstance.post("polls/create/", submissionData);
       setResponseData(res.data);
     } catch (err) {
-      console.error("API Error:", err.response?.data);
-      const apiErrors = err.response?.data || {};
+      console.error("API Error:", err.response?.data?.error);
+      const apiErrors = err.response?.data?.errors || {};
 
       const newErrors = {};
 
@@ -198,6 +187,8 @@ const CreatePoll = () => {
             newErrors[field] = apiErrors[field];
           }
         });
+      } else if (typeof apiErrors === "string") {
+        newErrors.general = apiErrors;
       }
 
       setErrors(newErrors);
@@ -206,27 +197,39 @@ const CreatePoll = () => {
     }
   };
 
-  const handlePaystackSuccess = async () => {
-    setPaystackLoading(false);
+  const handlePaystackSuccess = async (reference) => {
+    setPaystackLoading(true);
     setPaystackSuccess("Verifying payment...");
+    setPaystackError("");
+
     try {
       const verifyRes = await axiosInstance.get(
-        `/payment/verify/${paystackDetails.reference}/`
+        `/payment/verify/${reference.reference}/`
       );
       setPaystackSuccess(
-        verifyRes.data.message || "Payment verified successfully."
+        verifyRes.data.message ||
+          "Payment verified successfully. Your poll is now active!"
       );
+
+      // Update response data to reflect activated status
+      setResponseData((prev) => ({
+        ...prev,
+        message: "Poll created and activated successfully!",
+        payment_completed: true,
+      }));
     } catch (err) {
+      console.error("Payment verification error:", err);
       setPaystackError(
-        err ||
+        err.response?.data?.message ||
           "Payment verification failed. Please contact support if you were debited."
       );
+    } finally {
+      setPaystackLoading(false);
     }
   };
 
   const handlePaystackClose = () => {
     setPaystackLoading(false);
-    setPaystackDetails(null);
   };
 
   const renderStepContent = () => {
@@ -245,6 +248,7 @@ const CreatePoll = () => {
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="Enter poll title"
+                maxLength={200}
               />
               {errors.title && (
                 <p className="mt-1 text-sm text-red-500">{errors.title}</p>
@@ -261,6 +265,7 @@ const CreatePoll = () => {
                 rows={4}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="Enter poll description"
+                maxLength={1000}
               />
               {errors.description && (
                 <p className="mt-1 text-sm text-red-500">
@@ -270,7 +275,7 @@ const CreatePoll = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Poll Image
+                Poll Image (Optional)
               </label>
               <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
                 <div className="space-y-1 text-center">
@@ -285,7 +290,7 @@ const CreatePoll = () => {
                         id="poll-image-upload"
                         name="poll_image"
                         type="file"
-                        accept="image/jpeg,image/png"
+                        accept="image/jpeg,image/png,image/jpg"
                         onChange={handleInputChange}
                         className="sr-only"
                       />
@@ -299,11 +304,20 @@ const CreatePoll = () => {
                   <img
                     src={URL.createObjectURL(formData.poll_image)}
                     alt="Preview"
-                    className="h-32 w-32 object-cover rounded-lg"
+                    className="h-32 w-32 object-cover rounded-lg mx-auto"
                   />
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-gray-600 mt-1 text-center">
                     Selected: {formData.poll_image.name}
                   </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({ ...prev, poll_image: null }))
+                    }
+                    className="mt-2 text-sm text-red-600 hover:text-red-800 block mx-auto"
+                  >
+                    Remove image
+                  </button>
                 </div>
               )}
               {errors.poll_image && (
@@ -325,6 +339,7 @@ const CreatePoll = () => {
                 name="start_time"
                 value={formData.start_time}
                 onChange={handleInputChange}
+                min={new Date().toISOString().slice(0, 16)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
               {errors.start_time && (
@@ -341,6 +356,9 @@ const CreatePoll = () => {
                 name="end_time"
                 value={formData.end_time}
                 onChange={handleInputChange}
+                min={
+                  formData.start_time || new Date().toISOString().slice(0, 16)
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
               {errors.end_time && (
@@ -363,17 +381,21 @@ const CreatePoll = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="">Select Poll Type</option>
-                <option value="voters-pay">Voter-Pay</option>
-                <option value="creator-pay">Creator-Pay</option>
+                <option value="voters-pay">
+                  Voter-Pay (Voters pay to vote)
+                </option>
+                <option value="creator-pay">
+                  Creator-Pay (You pay for setup)
+                </option>
               </select>
               {errors.poll_type && (
                 <p className="mt-1 text-sm text-red-500">{errors.poll_type}</p>
               )}
             </div>
+
             {formData.poll_type === "creator-pay" && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <FaDollarSign className="inline mr-2" />
                   Expected Voters
                 </label>
                 <input
@@ -383,7 +405,8 @@ const CreatePoll = () => {
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   min="20"
-                  max="200"
+                  max="350"
+                  placeholder="Minimum 20 voters required"
                 />
                 {errors.expected_voters && (
                   <p className="mt-1 text-sm text-red-500">
@@ -391,17 +414,22 @@ const CreatePoll = () => {
                   </p>
                 )}
                 {setupFee > 0 && (
-                  <p className="mt-2 text-sm text-green-600">
-                    Total Setup Fee: GHS {setupFee}
-                  </p>
+                  <div className="mt-2 p-3 bg-green-50 rounded-lg">
+                    <p className="text-sm text-green-800 font-medium">
+                      Setup Fee: GHS {setupFee.toFixed(2)}
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">
+                      This fee covers voter code generation and poll management
+                    </p>
+                  </div>
                 )}
               </div>
             )}
+
             {formData.poll_type === "voters-pay" && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <FaDollarSign className="inline mr-2" />
-                  Voting Fee
+                  Voting Fee (GHS)
                 </label>
                 <input
                   type="number"
@@ -409,6 +437,9 @@ const CreatePoll = () => {
                   value={formData.voting_fee}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  min="0.01"
+                  step="0.01"
+                  placeholder="Amount voters pay to participate"
                 />
                 {errors.voting_fee && (
                   <p className="mt-1 text-sm text-red-500">
@@ -470,14 +501,24 @@ const CreatePoll = () => {
                   </dd>
                 </div>
                 {formData.poll_type === "creator-pay" && (
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">
-                      Setup Fee
-                    </dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      GHS {setupFee}
-                    </dd>
-                  </div>
+                  <>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">
+                        Expected Voters
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900">
+                        {formData.expected_voters}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">
+                        Setup Fee
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900">
+                        GHS {setupFee.toFixed(2)}
+                      </dd>
+                    </div>
+                  </>
                 )}
                 {formData.poll_type === "voters-pay" && (
                   <div>
@@ -489,8 +530,27 @@ const CreatePoll = () => {
                     </dd>
                   </div>
                 )}
+                {formData.poll_image && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">
+                      Poll Image
+                    </dt>
+                    <dd className="mt-1">
+                      <img
+                        src={URL.createObjectURL(formData.poll_image)}
+                        alt="Poll preview"
+                        className="h-20 w-20 object-cover rounded-lg"
+                      />
+                    </dd>
+                  </div>
+                )}
               </dl>
             </div>
+            {errors.general && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm text-red-600">{errors.general}</p>
+              </div>
+            )}
           </div>
         );
       default:
@@ -499,10 +559,8 @@ const CreatePoll = () => {
   };
 
   if (responseData) {
-    const isCreatorPay =
-      responseData &&
-      responseData.payment_link &&
-      formData.poll_type === "creator-pay";
+    const isCreatorPay = formData.poll_type === "creator-pay";
+    const hasPaymentLink = responseData.payment_link;
 
     return (
       <motion.div
@@ -517,85 +575,104 @@ const CreatePoll = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             {responseData.message}
           </h2>
+
           <div className="space-y-4">
-            {responseData.ussd_code && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="font-medium">USSD Code</p>
-                <p className="text-lg text-secondary-600">
-                  {responseData.ussd_code}
-                </p>
+            {responseData.short_url && (
+              <div className="bg-blue-50 rounded-lg p-4">
+                <p className="font-medium text-blue-900">Poll URL</p>
+                <div className="mt-2">
+                  <input
+                    type="text"
+                    value={responseData.short_url}
+                    readOnly
+                    className="w-full px-3 py-2 text-sm bg-white border border-blue-200 rounded-md"
+                  />
+                  <button
+                    onClick={() =>
+                      navigator.clipboard.writeText(responseData.short_url)
+                    }
+                    className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    Copy URL
+                  </button>
+                </div>
               </div>
             )}
-            {responseData.ussd_code && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="font-medium">Vote URL</p>
-                <p className="text-lg text-secondary-600">
-                  {responseData.short_url}
-                </p>
-              </div>
-            )}
-            {/* Only show PaystackButton for creator-pay */}
-            {isCreatorPay && (
-              <div>
-                <p className="font-medium mb-2">
-                  Activate Poll (Pay Setup Fee)
-                </p>
-                {paystackError && (
-                  <p className="text-red-500 mb-2">{paystackError}</p>
-                )}
-                {paystackSuccess && (
-                  <p className="text-green-600 mb-2">{paystackSuccess}</p>
-                )}
-                {paystackDetails ? (
+
+            {/* Payment section for creator-pay polls */}
+            {isCreatorPay &&
+              hasPaymentLink &&
+              !responseData.payment_completed && (
+                <div className="bg-yellow-50 rounded-lg p-4">
+                  <p className="font-medium text-yellow-900 mb-2">
+                    Complete Payment to Activate Poll
+                  </p>
+                  <p className="text-sm text-yellow-700 mb-4">
+                    Your poll has been created but needs payment to become
+                    active.
+                  </p>
+
+                  {paystackError && (
+                    <div className="mb-3 p-2 bg-red-100 border border-red-200 rounded text-red-700 text-sm">
+                      {paystackError}
+                    </div>
+                  )}
+
+                  {paystackSuccess && (
+                    <div className="mb-3 p-2 bg-green-100 border border-green-200 rounded text-green-700 text-sm">
+                      {paystackSuccess}
+                    </div>
+                  )}
+
                   <PaystackButton
                     publicKey={PAYSTACK_PUBLIC_KEY}
-                    email={paystackDetails.email}
-                    amount={paystackDetails.amount}
-                    reference={paystackDetails.reference}
+                    email={responseData.user_email || "user@example.com"}
+                    amount={setupFee * 100} // Convert to kobo
+                    reference={`poll-${responseData.poll_id}-${Date.now()}`}
                     currency="GHS"
-                    text="Pay & Activate Poll"
+                    text={
+                      paystackLoading
+                        ? "Processing..."
+                        : `Pay GHS ${setupFee.toFixed(2)}`
+                    }
                     onSuccess={handlePaystackSuccess}
                     onClose={handlePaystackClose}
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                    disabled={paystackLoading}
+                    className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
                   />
-                ) : (
-                  <button
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg"
-                    disabled
-                  >
-                    Loading payment details...
-                  </button>
-                )}
-              </div>
-            )}
-            {/* For voters-pay, show payment link as before */}
-            {responseData.payment_link &&
-              formData.poll_type === "voters-pay" && (
-                <div>
-                  <p className="font-medium mb-2">Payment Link</p>
-                  <a
-                    href={responseData.payment_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                  >
-                    Complete Payment
-                    <FaArrowRight className="ml-2" />
-                  </a>
                 </div>
               )}
+
+            {/* Download voter codes section */}
             {responseData.download_voter_codes && (
-              <div>
-                <p className="font-medium mb-2">Voter Codes</p>
+              <div className="bg-green-50 rounded-lg p-4">
+                <p className="font-medium text-green-900 mb-2">
+                  Voter Codes Ready
+                </p>
+                <p className="text-sm text-green-700 mb-3">
+                  Download the voter codes to distribute to participants.
+                </p>
                 <a
                   href={`${VOTER_CODES_URL}${responseData.download_voter_codes}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  Download Codes
+                  Download Voter Codes
                   <FaArrowRight className="ml-2" />
                 </a>
+              </div>
+            )}
+
+            {/* Success message for completed payments */}
+            {responseData.payment_completed && (
+              <div className="bg-green-50 rounded-lg p-4">
+                <p className="font-medium text-green-900">
+                  🎉 Poll Activated Successfully!
+                </p>
+                <p className="text-sm text-green-700 mt-1">
+                  Your poll is now live and ready for voting.
+                </p>
               </div>
             )}
           </div>
@@ -618,23 +695,37 @@ const CreatePoll = () => {
                 }`}
               >
                 <div
-                  className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                  className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
                     index <= currentStep
-                      ? "bg-primary-600 text-white"
-                      : "bg-gray-200 text-gray-600"
+                      ? "bg-primary-600 border-primary-600 text-white"
+                      : "bg-white border-gray-200 text-gray-600"
                   }`}
                 >
-                  {index + 1}
+                  {index < currentStep ? (
+                    <FaCheck className="w-4 h-4" />
+                  ) : (
+                    index + 1
+                  )}
                 </div>
-                <div
-                  className={`ml-2 ${
-                    index === currentStep ? "font-medium" : "text-gray-500"
-                  }`}
-                >
-                  {step.title}
+                <div className="ml-2 hidden sm:block">
+                  <div
+                    className={`text-sm ${
+                      index === currentStep
+                        ? "font-medium text-gray-900"
+                        : index < currentStep
+                        ? "font-medium text-primary-600"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    {step.title}
+                  </div>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className="w-full mx-4 h-0.5 bg-gray-200"></div>
+                  <div
+                    className={`flex-1 h-0.5 mx-4 ${
+                      index < currentStep ? "bg-primary-600" : "bg-gray-200"
+                    }`}
+                  />
                 )}
               </li>
             ))}
@@ -660,6 +751,7 @@ const CreatePoll = () => {
               <p className="text-gray-600 text-sm mb-6">
                 {steps[currentStep].description}
               </p>
+
               <form
                 onSubmit={
                   currentStep === steps.length - 1
@@ -668,17 +760,19 @@ const CreatePoll = () => {
                 }
               >
                 {renderStepContent()}
+
                 <div className="mt-8 flex justify-between">
                   <button
                     type="button"
                     onClick={prevStep}
-                    className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 ${
+                    className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors ${
                       currentStep === 0 ? "invisible" : ""
                     }`}
                   >
                     <FaArrowLeft className="mr-2" />
                     Previous
                   </button>
+
                   <button
                     type={
                       currentStep === steps.length - 1 ? "submit" : "button"
@@ -687,11 +781,11 @@ const CreatePoll = () => {
                       currentStep === steps.length - 1 ? undefined : nextStep
                     }
                     disabled={loading}
-                    className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                    className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
                   >
                     {currentStep === steps.length - 1 ? (
                       loading ? (
-                        "Creating..."
+                        "Creating Poll..."
                       ) : (
                         "Create Poll"
                       )
