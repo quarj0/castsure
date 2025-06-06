@@ -5,10 +5,17 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import PropTypes from "prop-types";
 import axiosInstance from "../apis/api";
-import { FaSearch, FaPlus, FaCalendarAlt, FaArchive, FaClock, FaPlay } from "react-icons/fa";
+import {
+  FaSearch,
+  FaPlus,
+  FaCalendarAlt,
+  FaArchive,
+  FaClock,
+  FaPlay,
+} from "react-icons/fa";
 import CountdownTimer from "./CountdownTimer";
 
-const DashBoard = ({authTokens}) => {
+const DashBoard = ({ authTokens }) => {
   const [incomingPolls, setIncomingPolls] = useState([]);
   const [pastPolls, setPastPolls] = useState([]);
   const [activePolls, setActivePolls] = useState([]);
@@ -22,45 +29,34 @@ const DashBoard = ({authTokens}) => {
       const now = new Date();
       try {
         setLoading(true);
-        console.log('Fetching polls...');
-        console.log('Auth token:', authTokens);
-        
         const response = await axiosInstance.get("polls/list/");
-        console.log('Polls response:', response.data);
-        
+
         const polls = response.data;
         setAllPolls(polls);
-        
-        // Categorize polls based on start_time and end_time
-        console.log('Current time:', now.toISOString());
-        
-        const incoming = polls.filter(poll => {
+
+        const incoming = polls.filter((poll) => {
           const startTime = new Date(poll.start_time);
-          console.log(`Poll ${poll.id} - Start time:`, startTime.toISOString());
           return startTime > now;
         });
-        
-        const active = polls.filter(poll => {
+
+        const active = polls.filter((poll) => {
           const startTime = new Date(poll.start_time);
           const endTime = new Date(poll.end_time);
-          console.log(`Poll ${poll.id} - Start:`, startTime.toISOString(), 'End:', endTime.toISOString());
+
           return startTime <= now && endTime > now;
         });
-        
-        const past = polls.filter(poll => {
+
+        const past = polls.filter((poll) => {
           const endTime = new Date(poll.end_time);
-          console.log(`Poll ${poll.id} - End time:`, endTime.toISOString());
           return endTime <= now;
         });
-        
-        console.log('Categorized polls:', { incoming, active, past });
-        
+
         setIncomingPolls(incoming);
         setActivePolls(active);
         setPastPolls(past);
       } catch (error) {
         console.error("Error fetching polls:", error);
-        setError(error.response?.data?.detail || 'Failed to fetch polls');
+        setError(error.response?.data?.detail || "Failed to fetch polls");
       } finally {
         setLoading(false);
       }
@@ -100,17 +96,23 @@ const DashBoard = ({authTokens}) => {
     <motion.div
       variants={item}
       className={`bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition-shadow ${
-        isPast ? 'opacity-75 hover:opacity-100' : ''
+        isPast ? "opacity-75 hover:opacity-100" : ""
       }`}
     >
-      <Link to={isPast ? `/poll/${poll.id}/results` : `/polls/${poll.id}/contestants`}>
+      <Link
+        to={
+          isPast ? `/poll/${poll.id}/results` : `/polls/${poll.id}/contestants`
+        }
+      >
         <img
           src={
             poll.poll_image ||
             "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZSBOb3QgQXZhaWxhYmxlPC90ZXh0Pjwvc3ZnPg=="
           }
           alt={poll.title}
-          className={`w-full h-48 object-cover ${isPast ? 'filter grayscale' : ''}`}
+          className={`w-full h-48 object-cover ${
+            isPast ? "filter grayscale" : ""
+          }`}
         />
         <div className="p-4">
           <h3 className="font-semibold text-lg mb-2 line-clamp-1">
@@ -121,7 +123,10 @@ const DashBoard = ({authTokens}) => {
           </p>
           {!isPast && (
             <div className="flex items-center justify-between mb-2">
-              <CountdownTimer startTime={poll.start_time} endTime={poll.end_time} />
+              <CountdownTimer
+                startTime={poll.start_time}
+                endTime={poll.end_time}
+              />
             </div>
           )}
           <div className="flex items-center text-sm text-gray-500">
@@ -171,9 +176,7 @@ const DashBoard = ({authTokens}) => {
     <div className="min-h-screen bg-gray-50">
       <section className="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-12">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl font-bold mb-4">
-            Welcome to Your Dashboard
-          </h1>
+          <h1 className="text-3xl font-bold mb-4">Welcome to Your Dashboard</h1>
           <p className="text-lg opacity-90">
             Manage your polls and view results all in one place
           </p>
@@ -292,9 +295,7 @@ const DashBoard = ({authTokens}) => {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 No active polls found
               </h3>
-              <p className="text-gray-500">
-                Check back when polls are live
-              </p>
+              <p className="text-gray-500">Check back when polls are live</p>
             </div>
           )}
         </div>
@@ -380,9 +381,7 @@ const DashBoard = ({authTokens}) => {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 No past polls found
               </h3>
-              <p className="text-gray-500">
-                Completed polls will appear here
-              </p>
+              <p className="text-gray-500">Completed polls will appear here</p>
             </div>
           )}
         </div>
@@ -395,8 +394,7 @@ export default DashBoard;
 
 DashBoard.propTypes = {
   authTokens: PropTypes.shape({
-    access: PropTypes.string.isRequired, 
-    refresh: PropTypes.string, 
-    
+    access: PropTypes.string.isRequired,
+    refresh: PropTypes.string,
   }),
 };

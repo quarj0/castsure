@@ -43,7 +43,6 @@ const CreatePoll = () => {
   const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
   const VOTER_CODES_URL = import.meta.env.VITE_API_URL;
 
-  // FIXED: Move useEffect to top level - always called, never conditional
   useEffect(() => {
     const fetchPaystackDetails = async () => {
       if (
@@ -53,10 +52,7 @@ const CreatePoll = () => {
       ) {
         try {
           setPaystackLoading(true);
-          const pollId = responseData.poll_id;
-          const res = await axiosInstance.post(`/vote/creator-pay/${pollId}/`, {
-            code: "ACTIVATION",
-          });
+          const res = await axiosInstance.post('polls/create/');
           setPaystackDetails({
             amount: res.data.amount,
             email: res.data.email,

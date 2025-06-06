@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "../apis/api";
@@ -16,7 +17,6 @@ const PaymentCompletion = () => {
     if (urlReference) {
       handleVerify(urlReference);
     }
-    // eslint-disable-next-line
   }, [urlReference]);
 
   const handleVerify = async (ref) => {
@@ -98,9 +98,9 @@ const PaymentCompletion = () => {
           <div className="space-y-4 mt-6">
             <button
               className="w-full px-4 py-2 text-white bg-blue-500 hover:bg-blue-600 rounded-md transition"
-              onClick={() => navigate(-1)}
+              onClick={() => navigate("/dashboard")}
             >
-              Go Back
+              Go to Dashboard
             </button>
           </div>
         )}
