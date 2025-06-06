@@ -1,7 +1,11 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react/prop-types */
+/* eslint-disable no-unused-vars */
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axiosInstance from "../apis/api";
+
 import {
   FaArrowLeft,
   FaChartBar,
@@ -46,8 +50,10 @@ const ResultsPage = () => {
   // Helper function to process image URLs
   const getImageUrl = (imageData) => {
     if (!imageData) return avatar;
-    if (typeof imageData === 'string') {
-      return imageData.startsWith('http') ? imageData : `http://localhost:8000${imageData}`;
+    if (typeof imageData === "string") {
+      return imageData.startsWith("http")
+        ? imageData
+        : `http://localhost:8000${imageData}`;
     }
     if (imageData.url) return imageData.url;
     return avatar;
@@ -57,7 +63,9 @@ const ResultsPage = () => {
     try {
       setLoading(true);
       // First try to get the results
-      const resultsResponse = await axiosInstance.get(`/vote/results/${pollId}/`);
+      const resultsResponse = await axiosInstance.get(
+        `/vote/results/${pollId}/`
+      );
 
       // Process results data
       const resultsData = resultsResponse.data;
@@ -70,7 +78,7 @@ const ResultsPage = () => {
         newPollDetails = {
           title: resultsResponse.data.poll_title,
           description: "This poll has ended. Showing final results.",
-          is_active: false
+          is_active: false,
         };
       }
 
@@ -80,15 +88,19 @@ const ResultsPage = () => {
         newPollDetails = pollResponse.data;
 
         // Check if poll is still active
-        const pollData = pollResponse.data.poll;
-        const now = new Date(new Date().toISOString());
-        const startTime = new Date(pollData.start_time);
-        const endTime = new Date(pollData.end_time);
-        const isActive = pollData.active;
-        setIsActive(isActive && now >= startTime && now <= endTime);
+        if (pollResponse.data?.poll) {
+          const pollData = pollResponse.data.poll || pollResponse.data;
+          const now = new Date();
+          const startTime = new Date(pollData.start_time);
+          const endTime = new Date(pollData.end_time);
+          const isActive = pollData.active;
+          setIsActive(isActive && now >= startTime && now <= endTime);
+        } else {
+          console.warn("poll key missing in poll data");
+        }
       } catch (pollError) {
-        console.error('Error fetching poll details:', pollError);
-        if (pollError.response?.data?.detail === "Poll is not active") {
+        console.error("Error fetching poll details:", pollError);
+        if (pollError.response?.data?.message === "Poll is not active") {
           setIsActive(false);
         }
       }
@@ -97,14 +109,13 @@ const ResultsPage = () => {
       if (newPollDetails) {
         setPollDetails(newPollDetails);
       }
-
     } catch (error) {
       console.error("Error fetching results:", error);
-      console.log('Error response data:', error.response?.data);
+      console.log("Error response data:", error.response?.data);
       setError(
         error.response?.data?.message ||
-        error.response?.data?.detail ||
-        "Failed to fetch results. Please try again."
+          error.response?.data?.detail ||
+          "Failed to fetch results. Please try again."
       );
     } finally {
       setLoading(false);
@@ -117,7 +128,8 @@ const ResultsPage = () => {
   }, [fetchResults]);
 
   const processResults = (data) => {
-    if (!data) return { results: [], categories: {}, categoryList: [], totalVotes: 0 };
+    if (!data)
+      return { results: [], categories: {}, categoryList: [], totalVotes: 0 };
 
     // If we have the new API response structure
     if (data.categories && data.category_list) {
@@ -125,22 +137,24 @@ const ResultsPage = () => {
         results: [], // We don't need this anymore but keep for backward compatibility
         categories: data.categories,
         categoryList: data.category_list,
-        totalVotes: data.total_votes || 0
+        totalVotes: data.total_votes || 0,
       };
     }
 
     // Handle legacy data formats
     if (Array.isArray(data)) {
       return {
-        results: data.map(item => ({
-          name: item.name || item.contestant?.name,
-          vote_count: item.vote_count || item.total_votes || 0,
-          image: getImageUrl(item.image || item.contestant_image),
-          category: item.category || 'Uncategorized'
-        })).sort((a, b) => b.vote_count - a.vote_count),
+        results: data
+          .map((item) => ({
+            name: item.name || item.contestant?.name,
+            vote_count: item.vote_count || item.total_votes || 0,
+            image: getImageUrl(item.image || item.contestant_image),
+            category: item.category || "Uncategorized",
+          }))
+          .sort((a, b) => b.vote_count - a.vote_count),
         categories: {},
         categoryList: [],
-        totalVotes: 0
+        totalVotes: 0,
       };
     }
 
@@ -181,7 +195,7 @@ const ResultsPage = () => {
 
   const renderCategoryResults = (category, categoryData) => {
     if (!categoryData || !categoryData.contestants) {
-      console.error('Invalid category data:', category, categoryData);
+      console.error("Invalid category data:", category, categoryData);
       return null;
     }
 
@@ -199,7 +213,7 @@ const ResultsPage = () => {
             ({categoryData.total_votes || 0} votes)
           </span>
         </h3>
-        
+
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -280,55 +294,64 @@ const ResultsPage = () => {
             transition={{ duration: 0.5 }}
             className="space-y-8"
           >
-            {categoryList && categoryList.map(category => (
-              <div key={category} className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <h3 className="text-xl font-bold mb-4 flex items-center">
-                  <FaChartBar className="mr-2 text-primary-600" />
-                  {category}
-                </h3>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart
-                    data={categories[category].contestants}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "rgba(255, 255, 255, 0.95)",
-                        borderRadius: "8px",
-                        border: "none",
-                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                      }}
-                      formatter={(value, name, props) => {
-                        if (!props || !props.payload) return '';
-                        return `${props.payload.percentage}%`;
-                      }}
-                    />
-                    <Legend />
-                    <Bar
-                      dataKey="vote_count"
-                      name="Votes"
-                      fill="#8884d8"
-                      label={{
-                        position: 'top',
-                        formatter: (value, name, props) => {
-                          if (!props || !props.payload) return '';
-                          return `${props.payload.percentage}%`;
-                        }
-                      }}
+            {categoryList &&
+              categoryList.map((category) => (
+                <div
+                  key={category}
+                  className="bg-white rounded-xl shadow-sm p-6 mb-6"
+                >
+                  <h3 className="text-xl font-bold mb-4 flex items-center">
+                    <FaChartBar className="mr-2 text-primary-600" />
+                    {category}
+                  </h3>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <BarChart
+                      data={categories[category].contestants}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                     >
-                      {categories[category].contestants.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={getDynamicColor(index, categories[category].contestants.length)}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ))}
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "rgba(255, 255, 255, 0.95)",
+                          borderRadius: "8px",
+                          border: "none",
+                          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                        }}
+                        formatter={(value, name, props) => {
+                          if (!props || !props.payload) return "";
+                          return `${props.payload.percentage}%`;
+                        }}
+                      />
+                      <Legend />
+                      <Bar
+                        dataKey="vote_count"
+                        name="Votes"
+                        fill="#8884d8"
+                        label={{
+                          position: "top",
+                          formatter: (value, name, props) => {
+                            if (!props || !props.payload) return "";
+                            return `${props.payload.percentage}%`;
+                          },
+                        }}
+                      >
+                        {categories[category].contestants.map(
+                          (entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={getDynamicColor(
+                                index,
+                                categories[category].contestants.length
+                              )}
+                            />
+                          )
+                        )}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ))}
           </motion.div>
         );
 
@@ -340,72 +363,92 @@ const ResultsPage = () => {
             transition={{ duration: 0.5 }}
             className="space-y-8"
           >
-            {categoryList && categoryList.map(category => (
-              <div key={category} className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <h3 className="text-xl font-bold mb-4 flex items-center">
-                  <FaChartPie className="mr-2 text-primary-600" />
-                  {category}
-                </h3>
-                <ResponsiveContainer width="100%" height={400}>
-                  <PieChart>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "rgba(255, 255, 255, 0.95)",
-                        borderRadius: "8px",
-                        border: "none",
-                        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                      }}
-                      formatter={(value, name, props) => {
-                        if (!props || !props.payload) return [value, name];
-                        return [`${value} votes (${props.payload.percentage}%)`, name];
-                      }}
-                    />
-                    <Legend />
-                    <Pie
-                      data={categories[category].contestants}
-                      dataKey="vote_count"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={150}
-                      label={({
-                        cx,
-                        cy,
-                        midAngle,
-                        innerRadius,
-                        outerRadius,
-                        value,
-                        index,
-                      }) => {
-                        const RADIAN = Math.PI / 180;
-                        const radius = 25 + innerRadius + (outerRadius - innerRadius);
-                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+            {categoryList &&
+              categoryList.map((category) => (
+                <div
+                  key={category}
+                  className="bg-white rounded-xl shadow-sm p-6 mb-6"
+                >
+                  <h3 className="text-xl font-bold mb-4 flex items-center">
+                    <FaChartPie className="mr-2 text-primary-600" />
+                    {category}
+                  </h3>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <PieChart>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "rgba(255, 255, 255, 0.95)",
+                          borderRadius: "8px",
+                          border: "none",
+                          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                        }}
+                        formatter={(value, name, props) => {
+                          if (!props || !props.payload) return [value, name];
+                          return [
+                            `${value} votes (${props.payload.percentage}%)`,
+                            name,
+                          ];
+                        }}
+                      />
+                      <Legend />
+                      <Pie
+                        data={categories[category].contestants}
+                        dataKey="vote_count"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={150}
+                        label={({
+                          cx,
+                          cy,
+                          midAngle,
+                          innerRadius,
+                          outerRadius,
+                          value,
+                          index,
+                        }) => {
+                          const RADIAN = Math.PI / 180;
+                          const radius =
+                            25 + innerRadius + (outerRadius - innerRadius);
+                          const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                          const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
-                        return (
-                          <text
-                            x={x}
-                            y={y}
-                            fill={getDynamicColor(index, categories[category].contestants.length)}
-                            textAnchor={x > cx ? "start" : "end"}
-                            dominantBaseline="central"
-                          >
-                            {categories[category].contestants[index].percentage}%
-                          </text>
-                        );
-                      }}
-                    >
-                      {categories[category].contestants.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={getDynamicColor(index, categories[category].contestants.length)}
-                        />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            ))}
+                          return (
+                            <text
+                              x={x}
+                              y={y}
+                              fill={getDynamicColor(
+                                index,
+                                categories[category].contestants.length
+                              )}
+                              textAnchor={x > cx ? "start" : "end"}
+                              dominantBaseline="central"
+                            >
+                              {
+                                categories[category].contestants[index]
+                                  .percentage
+                              }
+                              %
+                            </text>
+                          );
+                        }}
+                      >
+                        {categories[category].contestants.map(
+                          (entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={getDynamicColor(
+                                index,
+                                categories[category].contestants.length
+                              )}
+                            />
+                          )
+                        )}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              ))}
           </motion.div>
         );
 
@@ -417,11 +460,12 @@ const ResultsPage = () => {
             transition={{ duration: 0.5 }}
             className="space-y-8"
           >
-            {categoryList && categoryList.map(category => (
-              <div key={category}>
-                {renderCategoryResults(category, categories[category])}
-              </div>
-            ))}
+            {categoryList &&
+              categoryList.map((category) => (
+                <div key={category}>
+                  {renderCategoryResults(category, categories[category])}
+                </div>
+              ))}
           </motion.div>
         );
 
@@ -434,32 +478,33 @@ const ResultsPage = () => {
   const connectWebSocket = useCallback(() => {
     if (!isActive) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      console.log('WebSocket already connected');
+      console.log("WebSocket already connected");
       return;
     }
     try {
       const wsUrl = `ws://localhost:8000/ws/poll/${pollId}/`;
-      console.log('Connecting to WebSocket:', wsUrl);
+      console.log("Connecting to WebSocket:", wsUrl);
       wsRef.current = new WebSocket(wsUrl);
       wsRef.current.onopen = () => {
-        console.log('WebSocket connected');
+        console.log("WebSocket connected");
         setIsConnected(true);
         setConnectionError(null);
         reconnectAttemptsRef.current = 0;
-        wsRef.current.send(JSON.stringify({ type: 'ping' }));
+        wsRef.current.send(JSON.stringify({ type: "ping" }));
       };
       wsRef.current.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           switch (data.type) {
-            case 'poll_results':
+            case "poll_results":
               if (data.poll_results) {
                 setPollData(data.poll_results);
                 setIsActive(!!data.poll_results.active);
-                const total = data.poll_results.votes?.reduce(
-                  (sum, vote) => sum + (vote.total_votes || 0), 
-                  0
-                ) || 0;
+                const total =
+                  data.poll_results.votes?.reduce(
+                    (sum, vote) => sum + (vote.total_votes || 0),
+                    0
+                  ) || 0;
                 setTotalVotes(total);
                 // If poll is now inactive, disconnect WebSocket
                 if (!data.poll_results.active) {
@@ -469,42 +514,53 @@ const ResultsPage = () => {
                 fetchResults();
               }
               break;
-            case 'pong':
-              console.log('Received pong from server');
+            case "pong":
+              console.log("Received pong from server");
               break;
-            case 'error':
-              console.error('WebSocket error message:', data.message);
+            case "error":
+              console.error("WebSocket error message:", data.message);
               setConnectionError(data.message);
               break;
             default:
-              console.log('Unknown message type:', data.type);
+              console.log("Unknown message type:", data.type);
           }
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          console.error("Error parsing WebSocket message:", error);
         }
       };
       wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        setConnectionError('Connection error occurred');
+        console.error("WebSocket error:", error);
+        setConnectionError("Connection error occurred");
         setIsConnected(false);
       };
       wsRef.current.onclose = (event) => {
         console.log(`WebSocket disconnected: ${event.code} - ${event.reason}`);
         setIsConnected(false);
-        if (event.code !== 1000 && reconnectAttemptsRef.current < maxReconnectAttempts && isActive) {
-          const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
-          console.log(`Attempting to reconnect in ${delay}ms... (attempt ${reconnectAttemptsRef.current + 1})`);
+        if (
+          event.code !== 1000 &&
+          reconnectAttemptsRef.current < maxReconnectAttempts &&
+          isActive
+        ) {
+          const delay = Math.min(
+            1000 * Math.pow(2, reconnectAttemptsRef.current),
+            30000
+          );
+          console.log(
+            `Attempting to reconnect in ${delay}ms... (attempt ${
+              reconnectAttemptsRef.current + 1
+            })`
+          );
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttemptsRef.current++;
             connectWebSocket();
           }, delay);
         } else if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
-          setConnectionError('Maximum reconnection attempts reached');
+          setConnectionError("Maximum reconnection attempts reached");
         }
       };
     } catch (error) {
-      console.error('Error creating WebSocket connection:', error);
-      setConnectionError('Failed to create WebSocket connection');
+      console.error("Error creating WebSocket connection:", error);
+      setConnectionError("Failed to create WebSocket connection");
     }
   }, [pollId, isActive]);
 
@@ -514,7 +570,7 @@ const ResultsPage = () => {
       reconnectTimeoutRef.current = null;
     }
     if (wsRef.current) {
-      wsRef.current.close(1000, 'Component unmounting or poll ended');
+      wsRef.current.close(1000, "Component unmounting or poll ended");
       wsRef.current = null;
     }
     setIsConnected(false);
@@ -522,10 +578,12 @@ const ResultsPage = () => {
 
   const requestUpdate = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ 
-        type: 'request_update',
-        poll_id: pollId 
-      }));
+      wsRef.current.send(
+        JSON.stringify({
+          type: "request_update",
+          poll_id: pollId,
+        })
+      );
     }
   }, [pollId]);
 
@@ -538,11 +596,15 @@ const ResultsPage = () => {
           const data = await response.json();
           setPollData(data);
           setIsActive(!!data.active);
-          const total = data.votes?.reduce((sum, vote) => sum + (vote.total_votes || 0), 0) || 0;
+          const total =
+            data.votes?.reduce(
+              (sum, vote) => sum + (vote.total_votes || 0),
+              0
+            ) || 0;
           setTotalVotes(total);
         }
       } catch (error) {
-        console.error('Error fetching initial poll data:', error);
+        console.error("Error fetching initial poll data:", error);
       }
     };
     if (pollId) {
@@ -567,15 +629,21 @@ const ResultsPage = () => {
     if (!isActive && pollId) {
       httpIntervalRef.current = setInterval(async () => {
         try {
-          const response = await fetch(`http://localhost:8000/polls/${pollId}/`);
+          const response = await fetch(
+            `http://localhost:8000/polls/${pollId}/`
+          );
           if (response.ok) {
             const data = await response.json();
             setPollData(data);
-            const total = data.votes?.reduce((sum, vote) => sum + (vote.total_votes || 0), 0) || 0;
+            const total =
+              data.votes?.reduce(
+                (sum, vote) => sum + (vote.total_votes || 0),
+                0
+              ) || 0;
             setTotalVotes(total);
           }
         } catch (error) {
-          console.error('Error fetching poll data (ended poll):', error);
+          console.error("Error fetching poll data (ended poll):", error);
         }
       }, 30000); // 30s
     }
@@ -591,7 +659,7 @@ const ResultsPage = () => {
   useEffect(() => {
     const pingInterval = setInterval(() => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ type: 'ping' }));
+        wsRef.current.send(JSON.stringify({ type: "ping" }));
       }
     }, 30000); // Ping every 30 seconds
     return () => clearInterval(pingInterval);
@@ -730,11 +798,17 @@ const ResultsPage = () => {
                       className="text-3xl font-bold mt-1 truncate max-w-[200px]"
                     >
                       {(() => {
-                        const { categories, categoryList } = processResults(results);
+                        const { categories, categoryList } =
+                          processResults(results);
                         if (!categoryList.length) return "No categories";
-                        const leadingCategory = categoryList.reduce((max, cat) => 
-                          (categories[cat]?.totalVotes || 0) > (categories[max]?.totalVotes || 0) ? cat : max
-                        , categoryList[0]);
+                        const leadingCategory = categoryList.reduce(
+                          (max, cat) =>
+                            (categories[cat]?.totalVotes || 0) >
+                            (categories[max]?.totalVotes || 0)
+                              ? cat
+                              : max,
+                          categoryList[0]
+                        );
                         return leadingCategory;
                       })()}
                     </motion.h3>
@@ -805,15 +879,29 @@ const ResultsPage = () => {
             {/* Connection Status */}
             <div className="mt-6 p-3 rounded-lg flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <div className={`w-3 h-3 rounded-full ${isActive ? (isConnected ? 'bg-green-500' : 'bg-red-500') : 'bg-gray-400'}`}></div>
+                <div
+                  className={`w-3 h-3 rounded-full ${
+                    isActive
+                      ? isConnected
+                        ? "bg-green-500"
+                        : "bg-red-500"
+                      : "bg-gray-400"
+                  }`}
+                ></div>
                 <span className="text-sm font-medium">
-                  {isActive ? (isConnected ? 'Live Updates Active' : 'Connection Lost') : 'Poll Ended'}
+                  {isActive
+                    ? isConnected
+                      ? "Live Updates Active"
+                      : "Connection Lost"
+                    : "Poll Ended"}
                 </span>
               </div>
               {connectionError && isActive && (
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-red-600">{connectionError}</span>
-                  <button 
+                  <span className="text-sm text-red-600">
+                    {connectionError}
+                  </span>
+                  <button
                     onClick={handleRetryConnection}
                     className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
                   >
@@ -822,7 +910,7 @@ const ResultsPage = () => {
                 </div>
               )}
               {isActive && (
-                <button 
+                <button
                   onClick={requestUpdate}
                   className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
                   disabled={!isConnected}
@@ -834,20 +922,35 @@ const ResultsPage = () => {
 
             {/* Poll Information */}
             <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">{pollData?.title}</h1>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                {pollData?.title}
+              </h1>
               <p className="text-gray-600 mb-4">{pollData?.description}</p>
               <div className="flex items-center justify-between text-sm text-gray-500">
-                <span>Total Votes: <strong className="text-blue-600">{totalVotes.toLocaleString()}</strong></span>
-                <span>Last Updated: {new Date(pollData?.last_updated).toLocaleTimeString()}</span>
+                <span>
+                  Total Votes:{" "}
+                  <strong className="text-blue-600">
+                    {totalVotes.toLocaleString()}
+                  </strong>
+                </span>
+                <span>
+                  Last Updated:{" "}
+                  {new Date(pollData?.last_updated).toLocaleTimeString() ||
+                    "No updates yet"}
+                </span>
               </div>
             </div>
 
             {/* Voting Results */}
             <div className="space-y-4">
               {pollData?.votes?.map((vote, index) => {
-                const percentage = totalVotes > 0 ? (vote.total_votes / totalVotes * 100) : 0;
+                const percentage =
+                  totalVotes > 0 ? (vote.total_votes / totalVotes) * 100 : 0;
                 return (
-                  <div key={vote.contestant} className="bg-white rounded-lg shadow p-6">
+                  <div
+                    key={vote.contestant}
+                    className="bg-white rounded-lg shadow p-6"
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-lg font-semibold text-gray-800">
                         Contestant #{vote.contestant}
@@ -863,7 +966,7 @@ const ResultsPage = () => {
                     </div>
                     {/* Progress Bar */}
                     <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-                      <div 
+                      <div
                         className="bg-gradient-to-r from-blue-500 to-purple-600 h-4 rounded-full transition-all duration-500 ease-out"
                         style={{ width: `${percentage}%` }}
                       ></div>
@@ -877,8 +980,9 @@ const ResultsPage = () => {
             {(!pollData?.votes || pollData?.votes.length === 0) && (
               <div className="text-center py-12">
                 <div className="text-gray-400 text-6xl mb-4">📊</div>
-                <h3 className="text-xl font-semibold text-gray-600 mb-2">No Votes Yet</h3>
-                <p className="text-gray-500">Be the first to vote in this poll!</p>
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                  No Live Updates
+                </h3>
               </div>
             )}
           </motion.div>
