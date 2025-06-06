@@ -41,6 +41,7 @@ import EditPoll from "./components/EditPoll";
 import ContestantManagement from "./components/ContestantManagement";
 import VoteDemo from "./components/demo/VoteDemo";
 import LogoutNavbar from "./layouts/LogoutNavbar";
+import ActivePolls from "./layouts/ActivePolls";
 
 const App = () => {
   const [authTokens, setAuthTokens] = useState(() => {
@@ -141,6 +142,7 @@ const App = () => {
               <Route path="/" element={<HomePage />} />
               <Route path="/demo" element={<VoteDemo />} />
               <Route path="/upcoming/polls" element={<UpcomingPolls />} />
+              <Route path="/active/polls" element={<ActivePolls />} />
               <Route path="/past/polls" element={<PastPolls />} />
               <Route path="/payment/verify/:reference" element={<PaymentCompletion />} />
               <Route path="/poll/:pollId/contestants" element={<ContestantsPage />} />

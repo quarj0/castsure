@@ -101,7 +101,7 @@ const DashBoard = ({ authTokens }) => {
     >
       <Link
         to={
-          isPast ? `/poll/${poll.id}/results` : `/polls/${poll.id}/contestants`
+          isPast ? `/poll/${poll.id}/results` : `/poll/${poll.id}/contestants`
         }
       >
         <img
