@@ -143,9 +143,9 @@ const App = () => {
               <Route path="/upcoming/polls" element={<UpcomingPolls />} />
               <Route path="/past/polls" element={<PastPolls />} />
               <Route path="/payment/verify/:reference" element={<PaymentCompletion />} />
-              <Route path="/polls/:pollId/contestants" element={<ContestantsPage />} />
-              <Route path="/polls/:pollId/manage-contestants" element={<ContestantManagement />} />
-              <Route path="/polls/:pollId/contestants/:contestantId/update" element={<EditContestant />} />
+              <Route path="/poll/:pollId/contestants" element={<ContestantsPage />} />
+              <Route path="/poll/:pollId/manage-contestants" element={<ContestantManagement />} />
+              <Route path="/poll/:pollId/contestants/:contestantId/update" element={<EditContestant />} />
               <Route path="/manage-polls" element={<PollManagement />} />
               <Route path="/create/:pollId/contestants" element={<AddContestant />} />
               <Route path="/edit/poll/:pollId" element={<EditPoll />} />

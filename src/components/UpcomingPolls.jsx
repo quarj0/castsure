@@ -22,13 +22,11 @@ const UpcomingPolls = () => {
         const polls = response.data;
         const now = new Date();
         
-        // Properly categorize polls
         const upcoming = polls.filter(poll => new Date(poll.start_time) > now);
         const active = polls.filter(poll => 
           new Date(poll.start_time) <= now && new Date(poll.end_time) > now
         );
         
-        // Sort by start time
         const sortedUpcoming = upcoming.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
         const sortedActive = active.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
         
@@ -110,7 +108,6 @@ const UpcomingPolls = () => {
     </motion.div>
   );
 
-  // PropTypes for PollCard
   PollCard.propTypes = {
     poll: PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
@@ -170,7 +167,6 @@ const UpcomingPolls = () => {
     </div>
   );
 
-  // PropTypes for EmptyState
   EmptyState.propTypes = {
     type: PropTypes.oneOf(['upcoming', 'active']).isRequired,
   };
@@ -197,7 +193,6 @@ const UpcomingPolls = () => {
           </p>
         </div>
 
-        {/* Tab Navigation */}
         <div className="flex justify-center mb-8">
           <div className="bg-white rounded-lg shadow-sm p-1 flex">
             <button
@@ -225,7 +220,6 @@ const UpcomingPolls = () => {
           </div>
         </div>
 
-        {/* Polls Grid */}
         {currentPolls.length > 0 ? (
           <motion.div 
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
@@ -259,9 +253,7 @@ const UpcomingPolls = () => {
   );
 };
 
-// PropTypes for main component
 UpcomingPolls.propTypes = {
-  // No props expected for the main component
 };
 
 export default UpcomingPolls;

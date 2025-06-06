@@ -16,10 +16,19 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    const access = localStorage.getItem("access");
-    if (access) {
-      config.headers.Authorization = `Bearer ${access}`;
+    // Only add auth token for non-public endpoints
+    const publicEndpoints = ["polls/list/", "polls/"];
+    const isPublicEndpoint = publicEndpoints.some((endpoint) =>
+      config.url.includes(endpoint)
+    );
+
+    if (!isPublicEndpoint) {
+      const access = localStorage.getItem("access");
+      if (access) {
+        config.headers.Authorization = `Bearer ${access}`;
+      }
     }
+
     if (config.data instanceof FormData) {
       config.headers["Content-Type"] = "multipart/form-data";
     }

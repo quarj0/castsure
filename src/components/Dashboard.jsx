@@ -30,11 +30,26 @@ const DashBoard = ({authTokens}) => {
         setAllPolls(polls);
         
         // Categorize polls based on start_time and end_time
-        const incoming = polls.filter(poll => new Date(poll.start_time) > now);
-        const active = polls.filter(poll => 
-          new Date(poll.start_time) <= now && new Date(poll.end_time) > now
-        );
-        const past = polls.filter(poll => new Date(poll.end_time) <= now);
+        console.log('Current time:', now.toISOString());
+        
+        const incoming = polls.filter(poll => {
+          const startTime = new Date(poll.start_time);
+          console.log(`Poll ${poll.id} - Start time:`, startTime.toISOString());
+          return startTime > now;
+        });
+        
+        const active = polls.filter(poll => {
+          const startTime = new Date(poll.start_time);
+          const endTime = new Date(poll.end_time);
+          console.log(`Poll ${poll.id} - Start:`, startTime.toISOString(), 'End:', endTime.toISOString());
+          return startTime <= now && endTime > now;
+        });
+        
+        const past = polls.filter(poll => {
+          const endTime = new Date(poll.end_time);
+          console.log(`Poll ${poll.id} - End time:`, endTime.toISOString());
+          return endTime <= now;
+        });
         
         console.log('Categorized polls:', { incoming, active, past });
         
@@ -378,6 +393,8 @@ export default DashBoard;
 
 DashBoard.propTypes = {
   authTokens: PropTypes.shape({
-    access: PropTypes.string.isRequired,
-  }).isRequired,
+    access: PropTypes.string.object,
+  }),
+
+  
 };

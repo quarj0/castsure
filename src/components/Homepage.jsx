@@ -237,7 +237,7 @@ const Homepage = () => {
               <p className="text-gray-600">Discover and participate in our latest polls</p>
             </div>
             <Link
-              to="/upcoming/events"
+              to="/upcoming/polls"
               className="inline-flex items-center px-6 py-3 bg-white text-secondary-600 rounded-lg shadow-soft-xl hover:shadow-soft-2xl transition-shadow"
             >
               View Upcoming Events
@@ -265,7 +265,7 @@ const Homepage = () => {
                     pollType: poll.poll_type,
                     totalVotes: poll.total_votes
                   }}
-                  linkTo={`/polls/${poll.id}/contestants`}
+                  linkTo={`/poll/${poll.id}/contestants`}
                 />
               </motion.div>
             ))}
@@ -328,7 +328,7 @@ const Homepage = () => {
               <p className="text-gray-600">Explore our successfully completed polls</p>
             </div>
             <Link
-              to="/past/events"
+              to="/past/polls"
               className="inline-flex items-center px-6 py-3 bg-gray-50 text-gray-700 rounded-lg shadow-soft-xl hover:shadow-soft-2xl transition-shadow"
             >
               View Past Events
@@ -352,7 +352,7 @@ const Homepage = () => {
                     description: poll.description,
                     image: poll.poll_image,
                   }}
-                  linkTo={`/polls/${poll.id}/results`}
+                  linkTo={`/poll/${poll.id}/results`}
                 />
               </motion.div>
             ))}

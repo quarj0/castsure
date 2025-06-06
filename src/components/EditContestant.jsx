@@ -101,7 +101,7 @@ const UpdateContestant = () => {
       <div className="max-w-4xl mx-auto p-6 bg-white shadow rounded">
         <div className="text-red-500 p-4 bg-red-50 rounded mb-4">{error}</div>
         <button
-          onClick={() => navigate(`/polls/${pollId}/contestants/`)}
+          onClick={() => navigate(`/poll/${pollId}/contestants/`)}
           className="bg-gray-500 text-white px-4 py-2 rounded"
         >
           Back to Contestants

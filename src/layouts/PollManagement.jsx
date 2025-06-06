@@ -116,7 +116,7 @@ const PollManagement = () => {
   };
 
   const handleEditContestant = (pollId, contestantId) => {
-    navigate(`/polls/${pollId}/contestants/${contestantId}/edit`);
+    navigate(`/poll/${pollId}/contestants/${contestantId}/update`);
   };
 
   const filteredPolls = polls.filter(poll => {

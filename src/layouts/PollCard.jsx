@@ -101,9 +101,9 @@ PollCard.propTypes = {
   item: PropTypes.shape({
     title: PropTypes.string.isRequired,
     description: PropTypes.string.isRequired,
-    image: PropTypes.string.isRequired,
-    startTime: PropTypes.string.isRequired,
-    endTime: PropTypes.string.isRequired,
+    image: PropTypes.string,
+    startTime: PropTypes.string,
+    endTime: PropTypes.string,
     pollType: PropTypes.string,
     totalVotes: PropTypes.number
   }).isRequired,

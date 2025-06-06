@@ -621,7 +621,7 @@ const ResultsPage = () => {
       >
         <div className="container mx-auto">
           <Link
-            to={`/polls/${pollId}/contestants`}
+            to={`/poll/${pollId}/contestants`}
             className="inline-flex items-center text-white/80 hover:text-white mb-6 transition-colors"
           >
             <FaArrowLeft className="mr-2" />

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { differenceInDays, differenceInHours, differenceInMinutes, differenceInSeconds } from 'date-fns';
+import PropTypes from 'prop-types';
 
 const CountdownTimer = ({ startTime, endTime }) => {
-  const [status, setStatus] = useState('waiting'); // 'waiting', 'ongoing', 'ended'
+  const [status, setStatus] = useState('waiting'); 
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -28,11 +29,12 @@ const CountdownTimer = ({ startTime, endTime }) => {
         return;
       }
 
-      // Calculate time until start
-      const days = differenceInDays(start, now);
-      const hours = differenceInHours(start, now) % 24;
-      const minutes = differenceInMinutes(start, now) % 60;
-      const seconds = differenceInSeconds(start, now) % 60;
+      
+const days = Math.max(0, differenceInDays(start, now)) || '';
+const hours = Math.max(0, differenceInHours(start, now) % 24) || '';
+const minutes = Math.max(0, differenceInMinutes(start, now) % 60) || '';
+const seconds = Math.max(0, differenceInSeconds(start, now) % 60) || '';
+
 
       setTimeLeft({ days, hours, minutes, seconds });
       setStatus('waiting');
@@ -83,3 +85,10 @@ const CountdownTimer = ({ startTime, endTime }) => {
 };
 
 export default CountdownTimer; 
+
+CountdownTimer.propTypes = {
+  startTime: PropTypes.string,
+  endTime: PropTypes.string,
+  value: PropTypes.number,
+  unit: PropTypes.string,
+};

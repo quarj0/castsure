@@ -295,8 +295,8 @@ const Profile = ({ authTokens }) => {
 
 Profile.propTypes = {
   authTokens: PropTypes.shape({
-    access: PropTypes.string.isRequired,
-  }).isRequired,
+    access: PropTypes.object,
+  })
 };
 
 export default Profile;

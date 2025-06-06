@@ -92,7 +92,7 @@ const UpdatePoll = () => {
         <div className="mb-4">
           <label className="block mb-2">Poll Image</label>
           <img
-            src={`http://localhost:8000${poll.poll_image}`}
+            src={poll.poll_image}
             alt="Poll Image"
             className="mt-2 h-32 w-32 object-cover"
           />
