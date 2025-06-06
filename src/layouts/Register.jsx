@@ -57,6 +57,7 @@ const RegisterPage = () => {
     } catch (error) {
       if (error.response?.data) {
         const serverError = error.response.data.non_field_errors?.[0] ||
+                          error.response.data.errors?.[0] ||
                           error.response.data.detail;
         setError(serverError || "Registration failed. Please try again.");
       } else {

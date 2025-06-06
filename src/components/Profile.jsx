@@ -10,7 +10,6 @@ const Profile = ({ authTokens }) => {
   const [user, setUser] = useState(null);
   const [availableBalance, setAvailableBalance] = useState(null);
   const [totalWithdrawn, setTotalWithdrawn] = useState(null);
-  const [totalCollected, setTotalCollected] = useState(null);
   const [pollId, setPollId] = useState(null);
   const [paymentHistory, setPaymentHistory] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -18,10 +17,8 @@ const Profile = ({ authTokens }) => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
 
-
   const fetchUser = useCallback(async () => {
     try {
-      setLoading(true);
       const response = await axiosInstance.get("/auth/user/", {
         headers: {
           Authorization: `Bearer ${authTokens.access}`,
@@ -32,8 +29,6 @@ const Profile = ({ authTokens }) => {
     } catch (error) {
       setError("Failed to load user data.");
       console.error("Error fetching user data:", error);
-    } finally {
-      setLoading(false);
     }
   }, [authTokens.access]);
 
@@ -44,13 +39,25 @@ const Profile = ({ authTokens }) => {
           Authorization: `Bearer ${authTokens.access}`,
         },
       });
-      console.log("Balance response:", response.data); // Debug log
+      console.log("Balance response:", response.data);
       setAvailableBalance(response.data.available_balance);
       setTotalWithdrawn(response.data.total_withdrawn);
-      setTotalCollected(response.data.total_collected);
     } catch (error) {
       setError("Failed to load balance data.");
       console.error("Error fetching balance:", error);
+    }
+  }, [authTokens.access]);
+
+  const fetchPaymentHistory = useCallback(async (url = "/payment/history/") => {
+    try {
+      const response = await axiosInstance.get(url, {
+        headers: {
+          Authorization: `Bearer ${authTokens.access}`,
+        },
+      });
+      setPaymentHistory(response.data);
+    } catch (error) {
+      console.error("Error fetching payment history:", error);
     }
   }, [authTokens.access]);
 
@@ -65,13 +72,14 @@ const Profile = ({ authTokens }) => {
         ]);
       } catch (error) {
         console.error("Error loading profile data:", error);
+        setError("Failed to load profile data.");
       } finally {
         setLoading(false);
       }
     };
     
     loadData();
-  }, [authTokens]);
+  }, [fetchUser, fetchBalance, fetchPaymentHistory]);
 
   const handleProfileUpdate = () => {
     fetchUser();
@@ -81,6 +89,14 @@ const Profile = ({ authTokens }) => {
   const handleWithdraw = (data) => {
     console.log("Withdrawal successful:", data);
     fetchBalance();
+  };
+
+  const handlePaginationClick = (url) => {
+    if (url) {
+      // Extract the relative path from the full URL
+      const urlPath = new URL(url).pathname + new URL(url).search;
+      fetchPaymentHistory(urlPath);
+    }
   };
 
   if (loading) {
@@ -182,12 +198,7 @@ const Profile = ({ authTokens }) => {
                 GHS {totalWithdrawn !== null ? Number(totalWithdrawn).toFixed(2) : '0.00'}
               </p>
             </div>
-            <div className="bg-purple-50 rounded-lg p-4">
-              <p className="text-sm text-purple-600 mb-1">Total Collected</p>
-              <p className="text-2xl font-bold text-purple-700">
-                GHS {totalCollected !== null ? Number(totalCollected).toFixed(2) : '0.00'}
-              </p>
-            </div>
+            
           </div>
         </motion.div>
 
@@ -219,7 +230,7 @@ const Profile = ({ authTokens }) => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {paymentHistory.results.map((payment, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
+                    <tr key={payment.id || index} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {payment.transaction_type === 'poll_activation' ? 'Poll Activation' : 'Vote Payment'}
                       </td>
@@ -246,7 +257,7 @@ const Profile = ({ authTokens }) => {
               {(paymentHistory.previous || paymentHistory.next) && (
                 <div className="flex justify-between items-center mt-4">
                   <button
-                    onClick={() => fetchPaymentHistory(paymentHistory.previous)}
+                    onClick={() => handlePaginationClick(paymentHistory.previous)}
                     disabled={!paymentHistory.previous}
                     className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-200 transition-colors flex items-center"
                   >
@@ -256,7 +267,7 @@ const Profile = ({ authTokens }) => {
                     Page {paymentHistory.current_page || 1}
                   </span>
                   <button
-                    onClick={() => fetchPaymentHistory(paymentHistory.next)}
+                    onClick={() => handlePaginationClick(paymentHistory.next)}
                     disabled={!paymentHistory.next}
                     className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-200 transition-colors flex items-center"
                   >
@@ -295,7 +306,8 @@ const Profile = ({ authTokens }) => {
 
 Profile.propTypes = {
   authTokens: PropTypes.shape({
-    access: PropTypes.object,
+    access: PropTypes.string.isRequired,
+    refresh: PropTypes.string,
   })
 };
 

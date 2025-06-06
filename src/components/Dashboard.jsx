@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable react/prop-types */
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -393,8 +395,8 @@ export default DashBoard;
 
 DashBoard.propTypes = {
   authTokens: PropTypes.shape({
-    access: PropTypes.object,
+    access: PropTypes.string.isRequired, 
+    refresh: PropTypes.string, 
+    
   }),
-
-  
 };
