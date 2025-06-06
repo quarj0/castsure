@@ -161,7 +161,7 @@ export default Settings;
 
 Settings.propTypes = {
   authTokens: PropTypes.shape({
-    access: PropTypes.string.object,
+    access: PropTypes.object,
   }),
 };
 

@@ -393,7 +393,7 @@ export default DashBoard;
 
 DashBoard.propTypes = {
   authTokens: PropTypes.shape({
-    access: PropTypes.string.object,
+    access: PropTypes.object,
   }),
 
   
