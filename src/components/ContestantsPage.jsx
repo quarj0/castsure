@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -57,9 +58,7 @@ const ContestantsPage = () => {
           axiosInstance.get(`polls/${pollId}/`)
         ]);
 
-        console.log('Poll Response:', pollResponse.data);
         const type = pollResponse.data.poll_type || pollResponse.data.poll?.poll_type || "";
-        console.log('Setting poll type to:', type);
 
         setContestants(contestantsResponse.data);
         setPollTitle(pollResponse.data.title || "");
@@ -142,7 +141,7 @@ const ContestantsPage = () => {
         }
         setPaystackDetails({
           amount: response.data.amount,
-          email: response.data.email || "customer@castsure.com",
+          email: response.data.email || "customer@castsure.vote",
           reference: response.data.reference,
         });
         setPaystackLoading(true);
@@ -173,7 +172,6 @@ const ContestantsPage = () => {
         setVotes("");
         setPaystackDetails(null);
         setSuccess("");
-        // Optionally refresh results or UI here
       }, 2000);
     } catch (err) {
       setError("Payment verification failed. Please contact support if you were debited.");
@@ -387,7 +385,7 @@ const ContestantsPage = () => {
                     amount={paystackDetails.amount}
                     reference={paystackDetails.reference}
                     currency="GHS"
-                    text="Pay & Vote"
+                    text="Confirm Payment"
                     onSuccess={handlePaystackSuccess}
                     onClose={handlePaystackClose}
                     className="flex-1 px-4 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
@@ -407,7 +405,7 @@ const ContestantsPage = () => {
                         Processing...
                       </span>
                     ) : (
-                      pollType === "voters-pay" ? "Get Payment Link" : "Submit Vote"
+                      pollType === "voters-pay" ? "Proceed" : "Submit Vote"
                     )}
                   </button>
                 )}
