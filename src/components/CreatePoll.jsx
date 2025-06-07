@@ -4,7 +4,6 @@ import {
   FaImage,
   FaCalendarAlt,
   FaClock,
-  FaDollarSign,
   FaCheck,
   FaArrowLeft,
   FaArrowRight,
