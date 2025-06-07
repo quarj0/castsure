@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { FaShieldAlt, FaChartLine, FaUsers, FaHeadset } from "react-icons/fa";
 import { Helmet } from "react-helmet-async";
+import { Link } from "react-router-dom";
 
 const Services = () => {
   const services = [
@@ -33,7 +34,9 @@ const Services = () => {
   return (
     <>
       <Helmet>
-        <title>Services | Cast Sure - Professional Voting & Poll Management</title>
+        <title>
+          Services | Cast Sure - Professional Voting & Poll Management
+        </title>
         <meta
           name="description"
           content="Explore Cast Sure's comprehensive voting and poll management services. Featuring secure voting systems, real-time analytics, multi-user management, and 24/7 support."
@@ -46,13 +49,14 @@ const Services = () => {
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "Service",
-            "name": "Cast Sure Voting Services",
-            "provider": {
+            name: "Cast Sure Voting Services",
+            provider: {
               "@type": "Organization",
-              "name": "Cast Sure"
+              name: "Cast Sure",
             },
-            "serviceType": "Voting System",
-            "description": "Professional voting and poll management services including secure voting systems, real-time analytics, and multi-user management."
+            serviceType: "Voting System",
+            description:
+              "Professional voting and poll management services including secure voting systems, real-time analytics, and multi-user management.",
           })}
         </script>
       </Helmet>
@@ -156,13 +160,16 @@ const Services = () => {
               <p className="text-lg text-gray-600 font-lato mb-6">
                 Ready to transform your voting experience with Cast Sure?
               </p>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="bg-primary-600 text-white font-montserrat font-semibold px-8 py-3 rounded-lg hover:bg-primary-700 transition-colors duration-300"
-              >
-                Get Started Today
-              </motion.button>
+              <Link to="/register">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="bg-primary-600 text-white font-montserrat font-semibold px-8 py-3 rounded-lg hover:bg-primary-700 transition-colors duration-300"
+                  type="button"
+                >
+                  Get Started Today
+                </motion.button>
+              </Link>
             </div>
           </div>
         </div>
